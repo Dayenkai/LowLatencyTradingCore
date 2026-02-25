@@ -1,12 +1,21 @@
+#ifndef MEMORY_POOL_HEADER
+#define MEMORY_POOL_HEADER
+
 #include "Constants.h"
 #include <cstdint>
-
 typedef struct RxDesc
 {
     uint64_t    addr;
     uint32_t    len;
     uint32_t    flags;
 }RxDesc;
+
+typedef struct RxRingBuffer
+{
+    uint64_t    *head;
+    uint64_t    *tail;
+    RxDesc      rxDesc[RX_RING_SIZE];
+}rxRingBuffer;
 
 typedef struct FeedPacketHeader
 {
@@ -18,20 +27,22 @@ typedef struct FeedPacketHeader
 typedef struct Msg
 {
     uint16_t     id;
-    uint8_t      type;
     uint16_t     price;
     uint16_t     qty;
-    uint8_t      padding;
+    uint8_t      side;
+    uint8_t      event_type;
 }Msg;
 
 
-struct   MemoryPool
+typedef struct   MemoryPool
 {
     public:
 
     private:
-    RxDesc              rxDesc;
+    RxRingBuffer        RxRingDesc;
     alignas(64) int8_t  arena[PACKET_NUMBER][BUFFER_SIZE];
     FeedPacketHeader    packetHeader;
     Msg                 msg;
-};
+}MemoryPool;
+
+#endif

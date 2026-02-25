@@ -1,0 +1,3 @@
+/home/Projects/C++Training/HFT/LowLatencyTradingCore/resources/ChannelA.txt
+/home/Projects/C++Training/HFT/LowLatencyTradingCore/resources/ChannelA.txt
+/home/Projects/C++Training/HFT/LowLatencyTradingCore/resources/ChannelA.txt
