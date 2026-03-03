@@ -1,3 +1,4 @@
-/home/Projects/C++Training/HFT/LowLatencyTradingCore/resources/ChannelA.txt
-/home/Projects/C++Training/HFT/LowLatencyTradingCore/resources/ChannelA.txt
-/home/Projects/C++Training/HFT/LowLatencyTradingCore/resources/ChannelA.txt
+/home/ubuntu/Projects/C++Training/HFT/LowLatencyTradingCore/resources/ChannelA.txt
+/home/ubuntu/Projects/C++Training/HFT/LowLatencyTradingCore/resources/ChannelB.txt
+/home/ubuntu/Projects/C++Training/HFT/LowLatencyTradingCore/resources/ChannelC.txt
+/home/ubuntu/Projects/C++Training/HFT/LowLatencyTradingCore/resources/ChannelD.txt

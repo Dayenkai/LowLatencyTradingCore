@@ -12,6 +12,9 @@ typedef struct RxDesc
 
 typedef struct RxRingBuffer
 {
+    RxRingBuffer(){
+        //rxDesc = 
+    }
     uint64_t    *head;
     uint64_t    *tail;
     RxDesc      rxDesc[RX_RING_SIZE];

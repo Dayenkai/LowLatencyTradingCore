@@ -8,4 +8,4 @@
 
 //KEYWORDS                
 
-#define CHANNELS_LIST_FILE   "../resources/channelsListFile.txt"
+#define CHANNELS_LIST_FILE   "/home/ubuntu/Projects/C++Training/HFT/LowLatencyTradingCore/resources/channelsListFile.txt"

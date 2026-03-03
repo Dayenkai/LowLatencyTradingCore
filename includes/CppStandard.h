@@ -5,3 +5,7 @@
 
 //THREAD
 #include <thread>
+#include <stop_token>
+
+//CONTAINERS
+#include <vector>
