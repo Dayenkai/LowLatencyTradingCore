@@ -4,7 +4,7 @@
 
 int main()
 {
-    if (!MarketDataProcessor())
+    if (!MarketDataEnvSetUp())
     {
         log("Running Error. See the logs for more precision.");
     }

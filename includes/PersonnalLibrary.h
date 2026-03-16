@@ -7,6 +7,7 @@ void        log(const std::string &info);
 
 typedef struct ChannelFile
 {
+    public:
     ChannelFile(std::string channelFile, char* channelContent, uint8_t number) : _channelFile(channelFile), _number(number), _channelContent(channelContent){}
     std::string _channelFile;
     std::string _channelContent;

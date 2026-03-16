@@ -1,0 +1,5 @@
+Architecture :
+
+One NIC -> Writes on x Rings Buffer determined by the number of channels
+
+
