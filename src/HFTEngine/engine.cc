@@ -9,7 +9,7 @@
 int     MarketDataEnvSetUp()
 {
     std::string                                  channel_File("");
-    uint64_t                                     thread_Idx(0);
+    uint8_t                                      thread_Idx(0);
     std::vector<ChannelFile>                     channelFiles;
     std::ifstream                                channelsListStream(CHANNELS_LIST_FILE);
     std::unique_ptr<std::string>                 ChannelContent;
@@ -48,7 +48,6 @@ int     MarketDataEnvSetUp()
         }
         std::cout << "The number of threads is " << thread_Idx;
 
-
         dataProcessorsVector.reserve(thread_Idx);
         std::vector<MemoryPool>   memoryPoolvec(thread_Idx);
         uint8_t                   size = thread_Idx;
@@ -56,7 +55,6 @@ int     MarketDataEnvSetUp()
         {
             dataProcessorsVector.emplace_back(std::jthread(feedHandler, std::ref(memoryPoolvec[thread_Idx])));
         }
-
         
         std::jthread    nicReplayThread(NicReplay, std::ref(channelFiles), std::ref(memoryPoolvec));
         nicReplayThread.join();

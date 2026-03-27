@@ -4,7 +4,7 @@
 
 int     NicReplay(std::vector<ChannelFile>   &channelContent, std::vector<MemoryPool> &memoryPool)
 {
-    //std::cout << "File processed by Nic with content : " << channelContent << std::endl;
+    std::cout << "in [" << __func__ << "]" << std::endl;
 
     std::string         token("");
     std::string         line;
@@ -13,12 +13,9 @@ int     NicReplay(std::vector<ChannelFile>   &channelContent, std::vector<Memory
     {
         std::stringstream   channel_Content_Stream(channelContent[i]._channelContent);
         uint64_t            packetCount(0);
-
-        
+   
         while(std::getline(channel_Content_Stream, line) && ((memoryPool[i].rxRingDesc.head + 1) & (RX_RING_SIZE - 1)) != memoryPool[i].rxRingDesc.tail)
         {
-            //memoryPool[i].rxRingDesc.head.load(std::memory_order_acquire);
-            
             memoryPool[i].rxRingDesc.head.load(std::memory_order_acquire);
             memcpy(memoryPool[i].arena[packetCount], line.c_str(), line.length());
             memoryPool[i].rxRingDesc.data[packetCount & (RX_RING_SIZE - 1)].addr = memoryPool[i].arena[packetCount];
@@ -27,20 +24,5 @@ int     NicReplay(std::vector<ChannelFile>   &channelContent, std::vector<Memory
             memoryPool[i].rxRingDesc.head.store((memoryPool[i].rxRingDesc.head + 1) & (RX_RING_SIZE - 1), std::memory_order_release);
         }
     }
-    // std::stringstream   channel_Content_Stream(channelContent);
-    // while(std::getline(channel_Content_Stream, line))
-    // {
-    //     uint8_t     dataIndex(0);
-    //     std::vector<std::string>    tokens;
-
-    //     tokens.reserve(PACKET_COLUMNS_NB);
-    //     while (std::getline(std::stringstream(line), token, ' '))
-    //     {
-    //         if (dataIndex < PACKET_COLUMNS_NB)
-    //         {
-    //             //pool.arena[packetCount][dataIndex] = 
-    //         }    
-    //     }
-    // }
     return 0;
 }
