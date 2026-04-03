@@ -14,6 +14,8 @@
 #define BASE_SELLING_TICK           10000
 #define BASE_BUYING_TICK            9000
 
+#define PACKET_LENGTH               27
+
 
 //RESOURCES                
 #define CHANNELS_LIST_FILE   "resources/channelsListFile.txt"

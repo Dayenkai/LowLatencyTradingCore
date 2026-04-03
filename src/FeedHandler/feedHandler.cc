@@ -1,19 +1,12 @@
-#include "../../includes/HFTMemoryPool.h"
+#include "../../includes/MemoryPool.h"
 #include "../../includes/CppStandard.h"
 #include "../../includes/FeedHandler.h"
-#include "../../includes/PersonnalLibrary.h"
+#include "../../includes/NicReplay.h"
 #include "../../includes/OrderBookManager.h"
 
-void    parse(RxDesc &desc, FeedPacketHeader& packetHeader, Order& order, Msg &msg)
+void    parse(RxDesc &desc, Msg &msg)
 {
-    
-    uint32_t* p = (reinterpret_cast<uint32_t*>(desc.addr));
-    std::cout << "seq = " << *p << std::endl;
-    msg._instr = *(reinterpret_cast<uint32_t*>(desc.addr + sizeof(uint8_t)));
-    order._id = *(reinterpret_cast<uint16_t*>(desc.addr + sizeof(uint8_t)*5));
-    order._side = static_cast<Side>(reinterpret_cast<uint8_t>(*(desc.addr+sizeof(uint8_t)*9)));
-    order._price = *(reinterpret_cast<uint32_t*>(desc.addr+sizeof(uint8_t)*10));
-    order._qty = *(reinterpret_cast<uint32_t*>(desc.addr+sizeof(uint8_t)*18));
+    desc.addr;
 }
 
 int  feedHandler(MemoryPool &memory)
@@ -31,7 +24,7 @@ int  feedHandler(MemoryPool &memory)
             memory.rxRingDesc.tail.load(std::memory_order_acquire);
             std::cout << "Readind an entry !";
             
-            parse(memory.rxRingDesc.data[memory.rxRingDesc.tail], packetHeader, marketOrder, msg);
+            parse(memory.rxRingDesc.data[memory.rxRingDesc.tail], msg);
             book.addOrder(marketOrder);
             for (size_t idx = 0; idx < memory.rxRingDesc.data[memory.rxRingDesc.tail].len; idx++)
             {

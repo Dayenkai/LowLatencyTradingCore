@@ -6,6 +6,12 @@
 #include <cstdint>
 #include <cstddef>
 #include <atomic>
+
+template<typename T>
+void byteEncoder(uint64_t value, std::vector<T>& dest);
+
+void    charToBytes(char *content, std::vector<uint8_t> wireData);
+
 typedef struct alignas(64) RxDesc
 {
     uint32_t                len;
