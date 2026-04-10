@@ -45,25 +45,20 @@ typedef struct alignas(64) Msg
     uint32_t                 _instr;
 }Msg;
 
-enum class Side : bool
-{
-    Buy = true, Sell = false
-};
-
 typedef struct alignas(64) Order
 {
     Order()
     {
         
     }
-    Order(uint32_t qty, uint32_t price, Side side, uint16_t id, uint8_t event_type) : _qty(qty), _price(price), _side(side), _id(id), _event_type(event_type)
+    Order(uint32_t qty, uint32_t price, Side side, uint16_t id, Order_Type type) : _qty(qty), _price(price), _side(side), _id(id), _event_type(type)
     {
     }
-    uint32_t    _qty;
-    uint32_t    _price;
-    uint16_t    _id;
-    Side        _side;
-    uint8_t    _event_type;
+    uint32_t        _qty;
+    uint32_t        _price;
+    uint16_t        _id;
+    Side            _side;
+    Order_Type     _event_type;
 }Order;
 
 typedef class OrderBook

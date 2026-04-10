@@ -40,7 +40,7 @@ struct  Parser
     }
 
     //Packet Fixed Format
-    static void    charToBytes(char *content, std::vector<uint8_t> wireData)
+    static void    charToBytes(char *content, std::vector<uint8_t>& wireData)
     {
         std::string     buffer(content);
         std::ifstream   streamBuffer(buffer);

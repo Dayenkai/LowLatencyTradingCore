@@ -5,12 +5,11 @@
 #include "../../includes/FeedHandler.h"
 #include "../../includes/PersonnalLibrary.h"
 
-
 int     MarketDataEnvSetUp()
 {
     std::string                                  channel_File("");
-    uint8_t                                      thread_Idx(0);
-    std::vector<ChannelFile>                     channelFiles;
+    uint64_t                                     thread_Idx(0);
+    std::vector<Channel>                         channels;
     std::ifstream                                channelsListStream(CHANNELS_LIST_FILE);
     std::unique_ptr<std::string>                 ChannelContent;
     std::vector<std::jthread>                    dataProcessorsVector;
@@ -41,13 +40,15 @@ int     MarketDataEnvSetUp()
                 channelContentBuffer[contentLength] = '\0';
                 std::cout << "DISPLAY OF CHANNEL FILE " << channel_File << std::endl << channelContentBuffer << std::endl;
                 
-                channelFiles.emplace_back(ChannelFile{channel_File, channelContentBuffer, thread_Idx});
+                channels.emplace_back(Channel{channel_File, channelContentBuffer, thread_Idx});
                 thread_Idx+=1;
+                std::cout << "The number of threads is " << thread_Idx << std::endl;
             }
             channelStream.close();
         }
-        std::cout << "The number of threads is " << thread_Idx;
-
+        //channelsListStream.close();
+        
+        //system("read");
         dataProcessorsVector.reserve(thread_Idx);
         std::vector<MemoryPool>   memoryPoolvec(thread_Idx);
         uint8_t                   size = thread_Idx;
@@ -56,7 +57,7 @@ int     MarketDataEnvSetUp()
             dataProcessorsVector.emplace_back(std::jthread(feedHandler, std::ref(memoryPoolvec[thread_Idx])));
         }
         
-        std::jthread    nicReplayThread(NicReplay, std::ref(channelFiles), std::ref(memoryPoolvec));
+        std::jthread    nicReplayThread(NicReplay, std::ref(channels), std::ref(memoryPoolvec));
         nicReplayThread.join();
         for (thread_Idx = 0; thread_Idx < size; thread_Idx++)
         {
