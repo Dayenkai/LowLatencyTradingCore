@@ -72,7 +72,7 @@ typedef class OrderBook
 
         std::pair<uint32_t, uint32_t>   topOfTheBook()
         {
-            return std::pair(best_ask_idx, best_bid_idx);
+            return std::pair(best_ask_idx.second, best_bid_idx.second);
         }
 
         void                            addOrder(Order order)
@@ -121,7 +121,7 @@ typedef class OrderBook
     std::unordered_map<uint32_t, uint32_t>    out_of_band_sell;
     std::unordered_map<uint32_t, uint32_t>    out_of_band_buy;
     std::pair<bool,uint32_t>                  best_bid_idx{false,0};
-    std::pair<bool,uint32_t>                  best_ask_idx{dalse,0};
+    std::pair<bool,uint32_t>                  best_ask_idx{false,0};
 
 }OrderBook;
 
