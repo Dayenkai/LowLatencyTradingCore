@@ -17,39 +17,10 @@ typedef struct Channel
     template<typename T>
     void byteEncoder(T& value, std::vector<std::byte>& dest)
     {
-        switch(sizeof(T))
+        for (size_t i = 0; i < sizeof(T); i++)
         {
-            case sizeof(uint8_t):
-                dest.emplace_back(std::byte{*reinterpret_cast<uint8_t*>(&value)});
-                std::cout << (uint64_t)_channelContent.back() << ";";
-
-            break;
-            case sizeof(uint16_t):
-            dest.emplace_back(std::byte{static_cast<uint8_t>(value)});
-            std::cout << (char)_channelContent.back() << ";";
-            dest.emplace_back(std::byte{static_cast<uint8_t>(value << CHAR_BIT) });
-            std::cout << (char)_channelContent.back() << ";";
-            break;
-            case sizeof(uint32_t):
-            dest.emplace_back(std::byte{*reinterpret_cast<uint8_t*>(&value)});
+            dest.emplace_back(static_cast<std::byte>(value >> i * CHAR_BIT));
             std::cout << (uint64_t)_channelContent.back() << ";";
-            dest.emplace_back(std::byte{*(reinterpret_cast<uint32_t*>(&value)) >> CHAR_BIT});
-            std::cout << (uint64_t)_channelContent.back() << ";";
-            dest.emplace_back(std::byte{*(reinterpret_cast<uint32_t*>(&value)) >> 2 * CHAR_BIT});
-            std::cout << (uint64_t)_channelContent.back() << ";";
-            dest.emplace_back(std::byte{*(reinterpret_cast<uint32_t*>(&value)) >> 3 * CHAR_BIT});
-            std::cout << (uint64_t)_channelContent.back() << ";";
-            break;
-            case sizeof(uint64_t):
-            dest.emplace_back(std::byte{static_cast<uint8_t>(value)});
-            dest.emplace_back(std::byte{static_cast<uint8_t>(value << CHAR_BIT)});
-            dest.emplace_back(std::byte{static_cast<uint8_t>(value << 2 * CHAR_BIT)});
-            dest.emplace_back(std::byte{static_cast<uint8_t>(value << 3 * CHAR_BIT)});
-            dest.emplace_back(std::byte{static_cast<uint8_t>(value << 4 * CHAR_BIT)});
-            dest.emplace_back(std::byte{static_cast<uint8_t>(value << 5 * CHAR_BIT)});
-            dest.emplace_back(std::byte{static_cast<uint8_t>(value << 6 * CHAR_BIT)});
-            dest.emplace_back(std::byte{static_cast<uint8_t>(value << 7 * CHAR_BIT)});
-            break;
         }
     }
 
@@ -58,10 +29,10 @@ typedef struct Channel
     void    charToBytes(char *content, std::vector<T>& wireData)
     {
         std::string         buffer(content);
-        std::stringstream   streamBuffer(buffer);
+        std::stringstream   bufferStream(buffer);
         std::string         line("");
 
-        while (std::getline(streamBuffer, line))
+        while (std::getline(bufferStream, line))
         {
             if (line.length() >= PACKET_ENTRY_SIZE)
             {

@@ -37,12 +37,12 @@ typedef struct alignas(64) FeedPacketHeader
 
 typedef struct alignas(64) Msg
 {
-    uint16_t                 _id;
-    uint16_t                 _price;
-    uint16_t                 _qty;
+    uint32_t                 _id;
+    uint32_t                 _instr;
+    uint32_t                 _price;
+    uint32_t                 _qty;
     uint8_t                  _event_type;
     uint8_t                  _side;
-    uint32_t                 _instr;
 }Msg;
 
 typedef struct alignas(64) Order
@@ -85,10 +85,20 @@ typedef class OrderBook
                     if (tick <= BASE_BUYING_TICK)
                     {
                         buy_orders[BASE_BUYING_TICK - tick] += order._qty;
+                        if (best_bid_idx.first && buy_orders[BASE_BUYING_TICK - best_bid_idx.second] > 0 && tick > buy_orders[BASE_BUYING_TICK - best_bid_idx.second])
+                        {
+                            best_bid_idx.first = true;
+                            //best_buy_idx.second = tick;
+                        }
                     }
                     else
                     {
                         out_of_band_buy[tick] += order._qty;
+                        // if (out_of_band_buy[tick] > 0 && tick > buy_orders[BASE_BUYING_TICK - best_ask_idx])
+                        // {
+                        //     best_ask_idx.first = true;
+                        //     besttick;
+                        // }
                     }
                 }
                 else
@@ -110,8 +120,8 @@ typedef class OrderBook
     std::vector<uint32_t>                     sell_orders;
     std::unordered_map<uint32_t, uint32_t>    out_of_band_sell;
     std::unordered_map<uint32_t, uint32_t>    out_of_band_buy;
-    uint32_t                                  best_bid_idx;
-    uint32_t                                  best_ask_idx;
+    std::pair<bool,uint32_t>                  best_bid_idx{false,0};
+    std::pair<bool,uint32_t>                  best_ask_idx{dalse,0};
 
 }OrderBook;
 
