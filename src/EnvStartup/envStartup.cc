@@ -41,7 +41,6 @@ int     TradingEngineSetUp()
                 char     content[size + 1];
                 channelStream.read(content, size);
                 content[size] = '\0';
-                std::cout << "CHANNEL DISPLAY :" << fileName << std::endl << content << std::endl;
                 channels.emplace_back(Channel{fileName, content, thread_Idx});
 
                 thread_Idx+=1;
@@ -57,6 +56,7 @@ int     TradingEngineSetUp()
         dataProcessorsVector.reserve(thread_Idx);
         std::vector<MemoryPool>   memoryPoolvec(thread_Idx);
         uint8_t                   size = thread_Idx;
+
         for (thread_Idx = 0; thread_Idx < size; thread_Idx++)
         {
             dataProcessorsVector.emplace_back(std::jthread(feedHandler, std::ref(memoryPoolvec[thread_Idx])));

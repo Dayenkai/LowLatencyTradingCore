@@ -66,8 +66,10 @@ typedef class OrderBook
     public:
         OrderBook()
         {
-            buy_orders.reserve(BAND_SIZE);
-            sell_orders.reserve(BAND_SIZE);
+            buy_orders.resize(BAND_SIZE);
+            sell_orders.resize(BAND_SIZE);
+            out_of_band_buy.reserve(BAND_SIZE);
+            out_of_band_sell.reserve(BAND_SIZE);
         }
 
         std::pair<uint32_t, uint32_t>   topOfTheBook()
@@ -75,26 +77,27 @@ typedef class OrderBook
             return std::pair(best_ask_idx.second, best_bid_idx.second);
         }
 
-        void                            addOrder(Order order)
+        void                            addOrder(Msg order)
         {
-            uint32_t    tick = static_cast<uint32_t>(order._price * 100.00);
+            
+            Side side = static_cast<Side>(order._side);
             if (order._price > 0 && order._qty > 0)
             {
-                if (order._side == Side::Buy)
+                if (side == Side::Buy)
                 {   
-                    if (tick <= BASE_BUYING_TICK)
+                    if (order._price <= BASE_BUYING_TICK)
                     {
-                        buy_orders[BASE_BUYING_TICK - tick] += order._qty;
-                        if (best_bid_idx.first && buy_orders[BASE_BUYING_TICK - best_bid_idx.second] > 0 && tick > buy_orders[BASE_BUYING_TICK - best_bid_idx.second])
+                        buy_orders[BASE_BUYING_TICK - order._price] += order._qty;
+                        if (best_bid_idx.first && buy_orders[BASE_BUYING_TICK - best_bid_idx.second] > 0 && order._price > buy_orders[BASE_BUYING_TICK - best_bid_idx.second])
                         {
                             best_bid_idx.first = true;
-                            //best_buy_idx.second = tick;
+                            //best_buy_idx.second = order._price;
                         }
                     }
                     else
                     {
-                        out_of_band_buy[tick] += order._qty;
-                        // if (out_of_band_buy[tick] > 0 && tick > buy_orders[BASE_BUYING_TICK - best_ask_idx])
+                        out_of_band_buy[order._price] += order._qty;
+                        // if (out_of_band_buy[order._price] > 0 && order._price > buy_orders[BASE_BUYING_TICK - best_ask_idx])
                         // {
                         //     best_ask_idx.first = true;
                         //     besttick;
@@ -104,19 +107,19 @@ typedef class OrderBook
                 else
                 {
                     uint32_t    band_limit = BASE_SELLING_TICK + BAND_SIZE;
-                    if (tick >= BASE_SELLING_TICK && tick <= band_limit)
+                    if (order._price >= BASE_SELLING_TICK && order._price <= band_limit)
                     {
-                        sell_orders[tick - BASE_SELLING_TICK] += order._qty;
+                        sell_orders[order._price - BASE_SELLING_TICK] += order._qty;
                     }
                     else
                     {
-                        out_of_band_sell[tick] += order._qty;
+                        out_of_band_sell[order._price] += order._qty;
                     }
                 }
             }
         }
     private:
-    std::vector<uint32_t>                     buy_orders;
+    alignas(64)std::vector<uint32_t>                     buy_orders;
     std::vector<uint32_t>                     sell_orders;
     std::unordered_map<uint32_t, uint32_t>    out_of_band_sell;
     std::unordered_map<uint32_t, uint32_t>    out_of_band_buy;
