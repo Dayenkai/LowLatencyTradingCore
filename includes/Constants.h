@@ -21,9 +21,9 @@ enum class Side : bool
     Buy = true, Sell = false
 };
 
-#define BAND_SIZE                   4096
-#define BASE_SELLING_TICK           10000
-#define BASE_BUYING_TICK            9000
+#define BAND_SIZE                   10960000
+#define BASE_SELLING_TICK           1000000
+#define BASE_BUYING_TICK            1000000
 
 
 //RESOURCES                

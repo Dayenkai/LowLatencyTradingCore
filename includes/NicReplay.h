@@ -9,7 +9,7 @@
 typedef struct Channel
 {
     public:
-    Channel(std::string channelFile, char* channelContent, uint8_t number) : _channelFile(channelFile), _number(number)
+    Channel(std::string channelFile, char* channelContent, uint64_t number) : _channelFile(channelFile), _number(number)
     {
         charToBytes(channelContent, _channelContent);
     }
@@ -20,7 +20,7 @@ typedef struct Channel
         for (size_t i = 0; i < sizeof(T); i++)
         {
             dest.emplace_back(static_cast<std::byte>(value >> i * CHAR_BIT));
-            std::cout << (uint64_t)_channelContent.back() << ";";
+            //std::cout << (uint64_t)_channelContent.back() << ";";
         }
     }
 
@@ -44,7 +44,7 @@ typedef struct Channel
                 uint32_t       price = std::stoi(line.substr(24, 9));
                 uint32_t       qty   = std::stoi(line.substr(33, 9));
 
-                std::cout << "Seq = " << seq << ", instr = " << instr << ", id = " << id << ", side = " << (uint64_t)side << ", type = " << (uint64_t)type << ", price = " << price << ", qty = " << qty << std::endl;
+                //std::cout << "Seq = " << seq << ", instr = " << instr << ", id = " << id << ", side = " << (uint64_t)side << ", type = " << (uint64_t)type << ", price = " << price << ", qty = " << qty << std::endl;
                 byteEncoder(seq, wireData);
                 byteEncoder(*(reinterpret_cast<uint32_t*>(instr.data())), wireData);
                 byteEncoder(id, wireData);
@@ -52,7 +52,7 @@ typedef struct Channel
                 byteEncoder(type, wireData);
                 byteEncoder(price, wireData);
                 byteEncoder(qty, wireData);
-                std::cout << std::endl;
+                //std::cout << std::endl;
             }
         }
     }

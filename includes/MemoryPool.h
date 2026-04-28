@@ -83,39 +83,55 @@ typedef class OrderBook
             Side side = static_cast<Side>(order._side);
             if (order._price > 0 && order._qty > 0)
             {
-                if (side == Side::Buy)
-                {   
-                    if (order._price <= BASE_BUYING_TICK)
-                    {
+                auto start = Clock::now();
                         buy_orders[BASE_BUYING_TICK - order._price] += order._qty;
-                        if (best_bid_idx.first && buy_orders[BASE_BUYING_TICK - best_bid_idx.second] > 0 && order._price > buy_orders[BASE_BUYING_TICK - best_bid_idx.second])
-                        {
-                            best_bid_idx.first = true;
-                            //best_buy_idx.second = order._price;
-                        }
-                    }
-                    else
-                    {
-                        out_of_band_buy[order._price] += order._qty;
-                        // if (out_of_band_buy[order._price] > 0 && order._price > buy_orders[BASE_BUYING_TICK - best_ask_idx])
-                        // {
-                        //     best_ask_idx.first = true;
-                        //     besttick;
-                        // }
-                    }
-                }
-                else
-                {
-                    uint32_t    band_limit = BASE_SELLING_TICK + BAND_SIZE;
-                    if (order._price >= BASE_SELLING_TICK && order._price <= band_limit)
-                    {
-                        sell_orders[order._price - BASE_SELLING_TICK] += order._qty;
-                    }
-                    else
-                    {
-                        out_of_band_sell[order._price] += order._qty;
-                    }
-                }
+                        auto end    = Clock::now();
+                        std::cout << "Update inside the Buying vector, with order price " << order._price << " with index " << BASE_BUYING_TICK - order._price <<  " takes : " << std::chrono::duration_cast<std::chrono::nanoseconds>(end-start).count() << std::endl; 
+                // if (side == Side::Buy)
+                // {   
+                //     if (order._price <= BASE_BUYING_TICK)
+                //     {
+                //         //std::cout << "The index that we will add is " << BASE_BUYING_TICK - order._price;
+                        
+                //         // if (best_bid_idx.first && order._price > buy_orders[BASE_BUYING_TICK - best_bid_idx.second])
+                //         // {
+                //         //     best_bid_idx.first = true;
+                //         //     //best_buy_idx.second = order._price;
+                //         // }
+                //     }
+                //     // else
+                //     // {
+                //     //     auto start = Clock::now();
+                //     //     out_of_band_buy[order._price] += order._qty;
+                //     //     auto end    = Clock::now();
+                //     //     std::cout << "Update inside the out_of_band buying vector takes : " << std::chrono::duration_cast<std::chrono::nanoseconds>(end-start).count() << std::endl; 
+                //     //     // if (out_of_band_buy[order._price] > 0 && order._price > buy_orders[BASE_BUYING_TICK - best_ask_idx])
+                //     //     // {
+                //     //     //     best_ask_idx.first = true;
+                //     //     //     besttick;
+                //     //     // }
+                //     // }
+                // }
+                // else
+                // {
+                //     //std::cout << "THe order price is " << order._price << std::endl;
+                //     //std::cout << "The index that we will add is " << order._price - BASE_SELLING_TICK << std::endl;
+                //     uint32_t    band_limit = BASE_SELLING_TICK + BAND_SIZE;
+                //     if (order._price >= BASE_SELLING_TICK && order._price <= band_limit)
+                //     {
+                //         auto start = Clock::now();
+                //         sell_orders[order._price - BASE_SELLING_TICK] += order._qty;
+                //         auto end    = Clock::now();
+                //         std::cout << "Update inside the selling vector takes : " << std::chrono::duration_cast<std::chrono::nanoseconds>(end-start).count() << std::endl;
+                //     }
+                //     else
+                //     {
+                //         auto start = Clock::now();
+                //         out_of_band_sell[order._price] += order._qty;
+                //         auto end    = Clock::now();
+                //         std::cout << "Update inside the selling vector takes : " << std::chrono::duration_cast<std::chrono::nanoseconds>(end-start).count() << std::endl;
+                //     }
+                // }
             }
         }
     private:
