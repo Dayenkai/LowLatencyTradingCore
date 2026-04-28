@@ -1,4 +1,4 @@
 
 
 main:
-	g++ -std=c++20 -pthread -g -O1 -fsanitize=address,undefined -fno-omit-frame-pointer src/main.cc src/HFTEngine/engine.cc src/NIC/nicReplay.cc src/PersonnalLibrary/OutputFunctions.cc src/FeedHandler/feedHandler.cc
+	g++ -std=c++20 -pthread -O3 -DNDEBUG -march=native src/main.cc src/EnvStartup/envStartup.cc src/NIC/nicReplay.cc src/PersonnalLibrary/OutputFunctions.cc src/FeedHandler/feedHandler.cc

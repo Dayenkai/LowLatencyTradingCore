@@ -4,7 +4,7 @@
 
 int main()
 {
-    if (!MarketDataEnvSetUp())
+    if (!TradingEngineSetUp())
     {
         log("Running Error. See the logs for more precision.");
     }
