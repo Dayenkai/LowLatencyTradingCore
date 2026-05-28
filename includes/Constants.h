@@ -18,7 +18,7 @@ enum class Order_Type : uint8_t
 
 enum class Side : bool
 {
-    Buy = true, Sell = false
+    Buy = false, Sell = true
 };
 
 #define BAND_SIZE                   10960000
@@ -27,7 +27,7 @@ enum class Side : bool
 
 
 //RESOURCES                
-#define CHANNELS_LIST_FILE          "resources/channelsListFile.txt"
+#define CHANNELS_LIST_FILE          "MarketData/channelsListFile.txt"
 
 
 //CLIMITS
