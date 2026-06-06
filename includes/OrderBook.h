@@ -9,13 +9,15 @@ typedef class OrderBook
         {
             bid_orders.resize(BAND_SIZE);
             sell_orders.resize(BAND_SIZE);
+            bitmapBid.resize(BITMAP_SIZE);
+            bitmapAsk.resize(BITMAP_SIZE);
             out_of_band_buy.reserve(BAND_SIZE);
             out_of_band_sell.reserve(BAND_SIZE);
         }
 
         std::pair<uint32_t, uint32_t>   topOfTheBook()
         {
-            return std::pair(best_ask_idx.second, best_bid_idx.second);
+            return std::pair(best_ask.second, best_bid.second);
         }
 
         void                            addOrder(Msg order)
@@ -29,6 +31,17 @@ typedef class OrderBook
                 if (static_cast<Side>(order._side) == Side::Buy)
                 {
                     bid_orders[BASE_BUYING_TICK - order._price] += order._qty;
+                    
+                    if (!best_bid.first)
+                    {
+                        best_bid.first = true;
+                        best_bid.second = BASE_BUYING_TICK - order._price;
+                    }
+                    else if (best_bid.second == BASE_BUYING_TICK - order._price && order._qty < 0)
+                    {
+
+                    }
+                    
                 }
                 //     if (order._price <= BASE_BUYING_TICK)
                 //     {
@@ -77,6 +90,9 @@ typedef class OrderBook
                 // }
             }
         }
+
+
+
         void    ListOrder(Side side)
         {
             auto listOrders = [&](std::vector<uint32_t>& lvlPrices)
@@ -114,9 +130,11 @@ typedef class OrderBook
     private:
     alignas(64) std::vector<uint32_t>          bid_orders;
     alignas(64) std::vector<uint32_t>          sell_orders;
+    alignas(64) std::vector<uint64_t>          bitmapBid;
+    alignas(64) std::vector<uint64_t>          bitmapAsk;
     alignas(64) std::unordered_map<uint32_t, uint32_t>    out_of_band_sell;
     alignas(64) std::unordered_map<uint32_t, uint32_t>    out_of_band_buy;
-    std::pair<bool,uint32_t>                  best_bid_idx{false,0};
-    std::pair<bool,uint32_t>                  best_ask_idx{false,0};
+    std::pair<bool,uint32_t>                  best_bid{false,0};
+    std::pair<bool,uint32_t>                  best_ask{false,0};
 
 }OrderBook;

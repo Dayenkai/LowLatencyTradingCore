@@ -22,6 +22,7 @@ enum class Side : bool
 };
 
 #define BAND_SIZE                   10960000
+#define BITMAP_SIZE                 171250
 #define BASE_SELLING_TICK           1000000
 #define BASE_BUYING_TICK            1000000
 
