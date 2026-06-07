@@ -23,8 +23,11 @@ void    parse(RxDesc &desc, Msg &msg)
     msg._qty           = static_cast<uint32_t>(*(desc.addr + 18)) | static_cast<uint16_t>(*(desc.addr + 19)) <<  CHAR_BIT | static_cast<uint16_t>(*(desc.addr + 20)) << 2 * CHAR_BIT | static_cast<uint16_t>(*(desc.addr + 21)) << 3 * CHAR_BIT;
 }
 
-int  feedHandler(MemoryPool &pool)
+int  feedHandler(MemoryPool &pool, uint32_t &coreId)
 {
+    pthread_t   current_thread = pthread_self();
+    pinThreadToCore(current_thread, coreId);
+
     TimePoint        start_time; 
     OrderBook        book;
     Msg              msg;

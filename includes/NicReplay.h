@@ -62,7 +62,7 @@ typedef struct Channel
     uint8_t                _number;
 }Channel;
 
-int     NicReplay(std::vector<Channel>  &channelFiles, std::vector<MemoryPool> &pool);
+int     NicReplay(std::vector<Channel>  &channelFiles, std::vector<MemoryPool> &pool, uint32_t &coreId);
 
 
 #endif

@@ -56,14 +56,15 @@ int     TradingEngineSetUp()
         dataProcessorsVector.reserve(thread_Idx);
         std::vector<MemoryPool>   memoryPoolvec(thread_Idx);
         uint8_t                   size = thread_Idx;
-
+        std::vector<uint32_t>     coreIds{1,2,3};
         for (thread_Idx = 0; thread_Idx < size; thread_Idx++)
         {
-            dataProcessorsVector.emplace_back(std::jthread(feedHandler, std::ref(memoryPoolvec[thread_Idx])));
+            dataProcessorsVector.emplace_back(std::jthread(feedHandler, std::ref(memoryPoolvec[thread_Idx]), std::ref(coreIds[thread_Idx])));
         }
         
             /*Set up Nic Replay*/
-        std::jthread    nicReplayThread(NicReplay, std::ref(channels), std::ref(memoryPoolvec));
+        uint32_t    nicCoreId = 0;
+        std::jthread    nicReplayThread(NicReplay, std::ref(channels), std::ref(memoryPoolvec), std::ref(nicCoreId));
         nicReplayThread.join();
         for (thread_Idx = 0; thread_Idx < size; thread_Idx++)
         {

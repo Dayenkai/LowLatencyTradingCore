@@ -5,41 +5,46 @@
 typedef class OrderBook
 {
     public:
-        OrderBook()
+        OrderBook() : best_ask_bidIdx({0,0})
         {
             bid_orders.resize(BAND_SIZE);
             sell_orders.resize(BAND_SIZE);
-            bitmapBid.resize(BITMAP_SIZE);
-            bitmapAsk.resize(BITMAP_SIZE);
+            bitmapBids.resize(BITMAP_SIZE);
+            bitmapAsks.resize(BITMAP_SIZE);
             out_of_band_buy.reserve(BAND_SIZE);
             out_of_band_sell.reserve(BAND_SIZE);
         }
 
-        std::pair<uint32_t, uint32_t>   topOfTheBook()
+        std::pair<uint32_t, uint32_t>&   topOfTheBook()
         {
-            return std::pair(best_ask.second, best_bid.second);
+            return best_ask_bidIdx;
         }
+
+        //Create a Function that returns PRICE LVL of ASK(LVL2)
+
+        //Create a Function that returns PRICE LVL of BID(LVL2)
+
+
+        //Create a Function that returns Details Order of ASK(LVL3)
+
+        //Create a Function that returns Details Order of BID(LVL3)
 
         void                            addOrder(Msg order)
         {
             if (order._price > 0 && order._qty > 0)
             {
-                //auto start = Clock::now();
-                
-                //auto end    = Clock::now();
-                //std::cout << "Update inside the Buying vector, with order price " << order._price << " with index " << BASE_BUYING_TICK - order._price <<  " takes : " << std::chrono::duration_cast<std::chrono::nanoseconds>(end-start).count() << std::endl; 
                 if (static_cast<Side>(order._side) == Side::Buy)
                 {
+                    // auto start = Clock::now();
+                
+                    // auto end    = Clock::now();
+                    // std::cout << "Update inside the Buying vector, with order price " << order._price << " with index " << BASE_BUYING_TICK - order._price <<  " takes : " << std::chrono::duration_cast<std::chrono::nanoseconds>(end-start).count() << std::endl; 
                     bid_orders[BASE_BUYING_TICK - order._price] += order._qty;
                     
-                    if (!best_bid.first)
+                    if (best_ask_bidIdx.second == 0 || bid_orders[BASE_BUYING_TICK - order._price] > bid_orders[best_ask_bidIdx.second])
                     {
-                        best_bid.first = true;
-                        best_bid.second = BASE_BUYING_TICK - order._price;
-                    }
-                    else if (best_bid.second == BASE_BUYING_TICK - order._price && order._qty < 0)
-                    {
-
+                        std::cout << "New Best Bid : " << buy_orders[BASE_BUYING_TICK - order._price] << std::endl;
+                        best_ask_bidIdx.second = BASE_BUYING_TICK - order._price;
                     }
                     
                 }
@@ -69,6 +74,13 @@ typedef class OrderBook
                 else
                 {
                     sell_orders[order._price - BASE_SELLING_TICK] += order._qty;
+
+                    //If first Ask entering the OrderBook, or ask being inferior to the best Ask
+                    if (best_ask_bidIdx.first == 0 || sell_orders[order._price - BASE_SELLING_TICK] < sell_orders[best_ask_bidIdx.first])
+                    {
+                        std::cout << "New Best Ask : " << sell_orders[order._price - BASE_SELLING_TICK] << std::endl;
+                        best_ask_bidIdx.first = order._price - BASE_SELLING_TICK;
+                    }
                 }
                 //     //std::cout << "THe order price is " << order._price << std::endl;
                 //     //std::cout << "The index that we will add is " << order._price - BASE_SELLING_TICK << std::endl;
@@ -91,9 +103,12 @@ typedef class OrderBook
             }
         }
 
+        void    findTopOfTheBook(const Side &side, const uint64_t &index, const std::vector<uint64_t> &bitmap, const std::vector<uint32_t> &orders) const
+        {
+            
+        }
 
-
-        void    ListOrder(Side side)
+        void    ListOrder(const Side &side)
         {
             auto listOrders = [&](std::vector<uint32_t>& lvlPrices)
             {
@@ -128,13 +143,12 @@ typedef class OrderBook
             }
         }
     private:
-    alignas(64) std::vector<uint32_t>          bid_orders;
-    alignas(64) std::vector<uint32_t>          sell_orders;
-    alignas(64) std::vector<uint64_t>          bitmapBid;
-    alignas(64) std::vector<uint64_t>          bitmapAsk;
+    alignas(64) std::vector<uint32_t>                     bid_orders;
+    alignas(64) std::vector<uint32_t>                     sell_orders;
+    alignas(64) std::vector<uint64_t>                     bitmapBids;
+    alignas(64) std::vector<uint64_t>                     bitmapAsks;
     alignas(64) std::unordered_map<uint32_t, uint32_t>    out_of_band_sell;
     alignas(64) std::unordered_map<uint32_t, uint32_t>    out_of_band_buy;
-    std::pair<bool,uint32_t>                  best_bid{false,0};
-    std::pair<bool,uint32_t>                  best_ask{false,0};
+    alignas(64) std::pair<uint32_t, uint32_t>              best_ask_bidIdx;
 
 }OrderBook;

@@ -2,10 +2,14 @@
 #include "../../includes/PersonnalLibrary.h"
 #include "../../includes/NicReplay.h"
 #include "../../includes/MemoryPool.h"
+#include "../../includes/Utils.h"
 
 
-int     NicReplay(std::vector<Channel>   &channels, std::vector<MemoryPool> &memoryPool)
+int     NicReplay(std::vector<Channel>   &channels, std::vector<MemoryPool> &memoryPool, uint32_t &coreId)
 {
+    pthread_t   current_thread = pthread_self();
+    pinThreadToCore(current_thread, coreId);
+
 
     for (uint64_t i = 0; i < channels.size(); i++)
     {
