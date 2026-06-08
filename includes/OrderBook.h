@@ -5,10 +5,10 @@
 typedef class OrderBook
 {
     public:
-        OrderBook() : best_ask_bidIdx({0,0})
+        OrderBook() : best_ask_bidIdx({BAND_SIZE-1,0})
         {
             bid_orders.resize(BAND_SIZE);
-            sell_orders.resize(BAND_SIZE);
+            ask_orders.resize(BAND_SIZE);
             bitmapBids.resize(BITMAP_SIZE);
             bitmapAsks.resize(BITMAP_SIZE);
             out_of_band_buy.reserve(BAND_SIZE);
@@ -29,7 +29,7 @@ typedef class OrderBook
 
         //Create a Function that returns Details Order of BID(LVL3)
 
-        void                            addOrder(Msg order)
+        void                            addOrder(const Msg &order)
         {
             if (order._price > 0 && order._qty > 0)
             {
@@ -40,12 +40,20 @@ typedef class OrderBook
                     // auto end    = Clock::now();
                     // std::cout << "Update inside the Buying vector, with order price " << order._price << " with index " << BASE_BUYING_TICK - order._price <<  " takes : " << std::chrono::duration_cast<std::chrono::nanoseconds>(end-start).count() << std::endl; 
                     bid_orders[BASE_BUYING_TICK - order._price] += order._qty;
-                    
-                    if (best_ask_bidIdx.second == 0 || bid_orders[BASE_BUYING_TICK - order._price] > bid_orders[best_ask_bidIdx.second])
-                    {
-                        std::cout << "New Best Bid : " << buy_orders[BASE_BUYING_TICK - order._price] << std::endl;
-                        best_ask_bidIdx.second = BASE_BUYING_TICK - order._price;
+                    bitmapBids[(BASE_BUYING_TICK - order._price)/64] |= 1ULL << (BASE_BUYING_TICK - order._price)%64;
+
+
+                    std::cout << "BidBitmap updated at index " << (BASE_BUYING_TICK - order._price)/64 << ", with value " << bitmapBids[(BASE_BUYING_TICK - order._price)/64] << std::endl;
+                    std::cout << " The selected bid is " << order._price << ", and the best bid is " << best_ask_bidIdx.second << std::endl;
+                    if (order._price > best_ask_bidIdx.second)
+                    {                        
+                        //If Orders cancelled, Find Next Best Bid Ask
+                        
+                        std::cout << "New Best Bid : " << order._price << std::endl;
+                        best_ask_bidIdx.second = order._price;//*-1+BASE_BUYING_TICK
+                        std::cout << "The best bid qty in the orderbook now is " << bid_orders[BASE_BUYING_TICK - order._price] << std::endl;
                     }
+                    
                     
                 }
                 //     if (order._price <= BASE_BUYING_TICK)
@@ -73,13 +81,13 @@ typedef class OrderBook
                 // }
                 else
                 {
-                    sell_orders[order._price - BASE_SELLING_TICK] += order._qty;
-
+                    ask_orders[order._price - BASE_SELLING_TICK] += order._qty;
+                    bitmapAsks[(order._price - BASE_SELLING_TICK)/64] |= 1ULL << (order._price - BASE_SELLING_TICK)%64;
                     //If first Ask entering the OrderBook, or ask being inferior to the best Ask
-                    if (best_ask_bidIdx.first == 0 || sell_orders[order._price - BASE_SELLING_TICK] < sell_orders[best_ask_bidIdx.first])
+                    if (order._price < best_ask_bidIdx.first)
                     {
-                        std::cout << "New Best Ask : " << sell_orders[order._price - BASE_SELLING_TICK] << std::endl;
-                        best_ask_bidIdx.first = order._price - BASE_SELLING_TICK;
+                        std::cout << "New Best Ask : " << order._price << std::endl;
+                        best_ask_bidIdx.first = order._price;//+BASE_SELLING_TICK
                     }
                 }
                 //     //std::cout << "THe order price is " << order._price << std::endl;
@@ -103,9 +111,44 @@ typedef class OrderBook
             }
         }
 
-        void    findTopOfTheBook(const Side &side, const uint64_t &index, const std::vector<uint64_t> &bitmap, const std::vector<uint32_t> &orders) const
+        void                            cancelOrder(const Msg &order)
         {
-            
+            /*For Cancel Order
+                    if (best_ask_bidIdx.second == BASE_BUYING_TICK - order._price && bid_orders[BASE_BUYING_TICK - order._price] <= 0)
+                    {
+                        findTopOfTheBook(Side::Buy, BASE_BUYING_TICK - order._price);
+                    } 
+                    */
+        }
+
+        void    findTopOfTheBook(const Side& side, const std::vector<uint64_t>& bitmap, const uint64_t &&index)
+        {
+            std::cout << "[in " << __func__ << "]" << std::endl;
+            for (uint64_t i = index; i < bitmap.size(); i++)
+            {
+                if (bitmap[i] != 0)
+                {
+                    uint64_t highestpos = __builtin_ctzll(bitmap[i]);
+                    std::cout << "New Top Of the Book ! Best " << (side == Side::Sell ? "Ask" : "Bid") << " is " << (side == Side::Sell ? i*64+highestpos + BASE_SELLING_TICK : BASE_BUYING_TICK - i*64+highestpos )  << std::endl;
+                    if (side == Side::Sell)
+                    {
+                        best_ask_bidIdx.first = i*64+highestpos;
+                    }
+                    else
+                    {
+                        best_ask_bidIdx.second = i*64+highestpos;
+                    }
+                    return;
+                }
+            }
+            if (side == Side::Sell)
+            {
+                best_ask_bidIdx.first = bid_orders.size()-1;
+            }
+            else
+            {
+                best_ask_bidIdx.second = 0;
+            }
         }
 
         void    ListOrder(const Side &side)
@@ -139,16 +182,47 @@ typedef class OrderBook
             else
             {
                 log("Listing of Sell Orders :");
-                listOrders(sell_orders);
+                listOrders(ask_orders);
             }
         }
+
+        std::vector<uint32_t>   &getAskOrders()
+        {
+            return ask_orders;
+        }
+
+        std::vector<uint32_t>   &getBidOrders()
+        {
+            return bid_orders;
+        }
+
+        void                    matchingUpdate()
+        {
+            std::cout << "[in " << __func__ << "]" << std::endl;
+            uint32_t maxQty = std::min(ask_orders[best_ask_bidIdx.first], bid_orders[best_ask_bidIdx.second]);
+            ask_orders[best_ask_bidIdx.first - BASE_SELLING_TICK] -= maxQty;
+            bid_orders[BASE_BUYING_TICK - best_ask_bidIdx.second] -= maxQty;
+            std::cout << "Before the conditions of FindtopofTHe book" << std::endl;
+            if (ask_orders[best_ask_bidIdx.first] == 0)
+            {
+                bitmapAsks[(best_ask_bidIdx.first - BASE_SELLING_TICK)/64] &= ~(1ULL << (best_ask_bidIdx.first - BASE_SELLING_TICK) % 64);
+                findTopOfTheBook(Side::Sell, bitmapAsks, (best_ask_bidIdx.first - BASE_SELLING_TICK)/64);
+            }
+            if (ask_orders[best_ask_bidIdx.second] == 0)
+            {
+                bitmapBids[(BASE_BUYING_TICK - best_ask_bidIdx.second)/64] &= ~(1ULL << (BASE_BUYING_TICK - best_ask_bidIdx.second) % 64);
+                findTopOfTheBook(Side::Buy, bitmapBids, (BASE_BUYING_TICK - best_ask_bidIdx.second)/64);
+            }
+            std::cout << "[in End of" << __func__ << "]" << std::endl;
+        }
+
     private:
     alignas(64) std::vector<uint32_t>                     bid_orders;
-    alignas(64) std::vector<uint32_t>                     sell_orders;
+    alignas(64) std::vector<uint32_t>                     ask_orders;
     alignas(64) std::vector<uint64_t>                     bitmapBids;
     alignas(64) std::vector<uint64_t>                     bitmapAsks;
     alignas(64) std::unordered_map<uint32_t, uint32_t>    out_of_band_sell;
     alignas(64) std::unordered_map<uint32_t, uint32_t>    out_of_band_buy;
-    alignas(64) std::pair<uint32_t, uint32_t>              best_ask_bidIdx;
+    alignas(64) std::pair<uint32_t, uint32_t>             best_ask_bidIdx;
 
 }OrderBook;

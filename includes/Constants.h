@@ -13,7 +13,7 @@
 //ORDER_BOOK
 enum class Order_Type : uint8_t
 {
-    ADD_ORDER = 0, TRADE = 1, CANCEL = 2
+    ADD = 0, TRADE = 1, CANCEL = 2
 };
 
 enum class Side : bool
@@ -23,8 +23,8 @@ enum class Side : bool
 
 #define BAND_SIZE                   10960000
 #define BITMAP_SIZE                 171250
-#define BASE_SELLING_TICK           1000000
-#define BASE_BUYING_TICK            1000000
+#define BASE_SELLING_TICK           10000
+#define BASE_BUYING_TICK            3000000
 
 
 //RESOURCES                

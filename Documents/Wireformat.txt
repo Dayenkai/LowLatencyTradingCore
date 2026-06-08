@@ -1,0 +1,4 @@
+WirePacketFormat :
+
+[SequenceNumber][MarketIdentifier][ClientId][Side][Type][Price][Quantity]
+

@@ -2,7 +2,7 @@
 #include "../../includes/CppStandard.h"
 #include "../../includes/FeedHandler.h"
 #include "../../includes/NicReplay.h"
-#include "../../includes/OrderBook.h"
+#include "../../includes/MatchingEngine.h"
 
 void    buildOrder(Msg &msg, Order &order)
 {
@@ -28,13 +28,13 @@ int  feedHandler(MemoryPool &pool, uint32_t &coreId)
     pthread_t   current_thread = pthread_self();
     pinThreadToCore(current_thread, coreId);
 
-    TimePoint        start_time; 
-    OrderBook        book;
+    TimePoint        start_time;
+    MatchingEngine   matchingEngine;
     Msg              msg;
     int              orderNb(0);
     bool             started(false);
 
-    
+
     while (true)
     {
         if (!started && !(((pool.rxRingDesc.tail) & (RX_RING_SIZE  - 1)) == pool.rxRingDesc.head ))
@@ -55,7 +55,7 @@ int  feedHandler(MemoryPool &pool, uint32_t &coreId)
                 //auto    start = Clock::now();
                 //std::cout << "YEaah" << std::endl;
                 //std::cout << "Order " << (static_cast<Side>(msg._side) == Side::Buy ? "Buy" : "Sell") << " price is : " << msg._price << " and qty is " << msg._qty << std::endl;
-                book.addOrder(msg);
+                matchingEngine.handleOrder(msg);
                 //auto    end =   Clock::now();
                 //std::cout << "Book Update : " << std::chrono::duration_cast<std::chrono::nanoseconds>(end-start).count() << " ns." << std::endl;
                 ++orderNb;
@@ -64,8 +64,8 @@ int  feedHandler(MemoryPool &pool, uint32_t &coreId)
             pool.rxRingDesc.tail.store((pool.rxRingDesc.tail + 1) & (RX_RING_SIZE - 1), std::memory_order_release); 
             if (orderNb == 10)
             {
-                book.ListOrder(Side::Buy);
-                book.ListOrder(Side::Sell);
+                matchingEngine.getOrderBook().ListOrder(Side::Buy);
+                matchingEngine.getOrderBook().ListOrder(Side::Sell);
                 //std::cout << "Data processing took " << ns << " ns\n" << std::endl;
             }
         }
