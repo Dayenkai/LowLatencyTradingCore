@@ -9,6 +9,9 @@
 //STRING MANIPULATION
 #include <cstring>
 
+//BIT MANIPULATION
+#include <bit>
+
 //THREAD
 #include <thread>
 #include <stop_token>

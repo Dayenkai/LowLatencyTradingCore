@@ -5,6 +5,7 @@
 #include "../../includes/Utils.h"
 
 
+
 int     NicReplay(std::vector<Channel>   &channels, std::vector<MemoryPool> &memoryPool, uint32_t &coreId)
 {
     pthread_t   current_thread = pthread_self();
@@ -24,16 +25,17 @@ int     NicReplay(std::vector<Channel>   &channels, std::vector<MemoryPool> &mem
             {
                
                 memoryPool[i].rxRingDesc.head.load(std::memory_order_acquire);
-                memcpy(memoryPool[i].arena[packetCount], reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb), sizeof(uint32_t));
-                memcpy(memoryPool[i].arena[packetCount] + sizeof(uint32_t), reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + sizeof(uint32_t)), sizeof(uint8_t));
-                memcpy(memoryPool[i].arena[packetCount] + sizeof(uint32_t) + sizeof(uint8_t), reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + sizeof(uint32_t) + sizeof(uint8_t)), sizeof(uint8_t));
-                memcpy(memoryPool[i].arena[packetCount] + sizeof(uint32_t) + 2 * sizeof(uint8_t), reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + sizeof(uint32_t) + 2 * sizeof(uint8_t)), sizeof(uint8_t));
-                memcpy(memoryPool[i].arena[packetCount] + sizeof(uint32_t) + 3 * sizeof(uint8_t), reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + sizeof(uint32_t) + 3 * sizeof(uint8_t)), sizeof(uint8_t));
-                memcpy(memoryPool[i].arena[packetCount] + 2 * sizeof(uint32_t), reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + 2 * sizeof(uint32_t)), sizeof(uint32_t));
-                memcpy(memoryPool[i].arena[packetCount] + 3 * sizeof(uint32_t), reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + 3 * sizeof(uint32_t)), sizeof(uint8_t));
-                memcpy(memoryPool[i].arena[packetCount] + 3 * sizeof(uint32_t) +  sizeof(uint8_t) , reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + 3 * sizeof(uint32_t) +  sizeof(uint8_t)), sizeof(uint8_t));
-                memcpy(memoryPool[i].arena[packetCount] + 3 * sizeof(uint32_t) + 2 * sizeof(uint8_t), reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + 3 * sizeof(uint32_t) + 2 * sizeof(uint8_t)), sizeof(uint32_t));
-                memcpy(memoryPool[i].arena[packetCount] + 4 * sizeof(uint32_t) + 2 * sizeof(uint8_t), reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + 4 * sizeof(uint32_t) + 2 * sizeof(uint8_t)), sizeof(uint32_t));
+                memcpy(memoryPool[i].arena[packetCount], reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb), dataSize[0]);//SequenceId
+                memcpy(memoryPool[i].arena[packetCount] + dataSize[0], reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataSize[0]), static_cast<size_t>(dataSize[1]/4));//First Letter of MarketId
+                memcpy(memoryPool[i].arena[packetCount] + dataSize[0] + static_cast<size_t>(dataSize[1]/4), reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataSize[0] + static_cast<size_t>(dataSize[1]/4)), static_cast<size_t>(dataSize[1]/4));//Second Letter of MarketId
+                memcpy(memoryPool[i].arena[packetCount] + dataSize[0] + static_cast<size_t>(dataSize[1]/2), reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataSize[0] + static_cast<size_t>(dataSize[1]/2)), static_cast<size_t>(dataSize[1]/4));//Third Letter of MarketId
+                memcpy(memoryPool[i].arena[packetCount] + dataSize[0] + static_cast<size_t>(dataSize[1]/2) + static_cast<size_t>(dataSize[1]/4), reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataSize[0] + static_cast<size_t>(dataSize[1]/2) + static_cast<size_t>(dataSize[1]/4)), static_cast<size_t>(dataSize[1]/4));//Fourth Letter of MarketId
+                memcpy(memoryPool[i].arena[packetCount] + dataSize[0] + dataSize[1], reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataSize[0] + dataSize[1]), dataSize[2]);//ClientId
+                memcpy(memoryPool[i].arena[packetCount] + dataSize[0] + dataSize[1] + dataSize[2], reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataSize[0] + dataSize[1] + dataSize[2]), dataSize[3]);//Side
+                memcpy(memoryPool[i].arena[packetCount] + dataSize[0] + dataSize[1] + dataSize[2] + dataSize[3], reinterpret_cast<void*>(channels[i]._channelContent.data() + dataSize[0] + dataSize[1] + dataSize[2] + dataSize[3]), dataSize[4]);//Type
+                memcpy(memoryPool[i].arena[packetCount] + dataSize[0] + dataSize[1] + dataSize[2] + dataSize[3] + dataSize[4], reinterpret_cast<void*>(channels[i]._channelContent.data() + dataSize[0] + dataSize[1] + dataSize[2] + dataSize[3] + dataSize[4]), dataSize[5]);//Kind
+                memcpy(memoryPool[i].arena[packetCount] + dataSize[0] + dataSize[1] + dataSize[2] + dataSize[3] + dataSize[4] + dataSize[5], reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataSize[0] + dataSize[1] + dataSize[2] + dataSize[3] + dataSize[4] + dataSize[5]), dataSize[6]);
+                memcpy(memoryPool[i].arena[packetCount] + dataSize[0] + dataSize[1] + dataSize[2] + dataSize[3] + dataSize[4] + dataSize[5] + dataSize[6], reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataSize[0] + dataSize[1] + dataSize[2] + dataSize[3] + dataSize[4] + dataSize[5] + dataSize[6]), dataSize[7]);
                 memoryPool[i].rxRingDesc.data[packetCount & (RX_RING_SIZE - 1)].addr = memoryPool[i].arena[packetCount];
                 memoryPool[i].rxRingDesc.data[packetCount & (RX_RING_SIZE - 1)].len  = static_cast<uint8_t>(BYTES_NB_PER_ENTRY);
                 byteNb+=static_cast<uint64_t>(BYTES_NB_PER_ENTRY);

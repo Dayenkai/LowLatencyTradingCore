@@ -42,16 +42,12 @@ typedef class OrderBook
                     bid_orders[BASE_BUYING_TICK - order._price] += order._qty;
                     bitmapBids[(BASE_BUYING_TICK - order._price)/64] |= 1ULL << (BASE_BUYING_TICK - order._price)%64;
 
-
-                    std::cout << "BidBitmap updated at index " << (BASE_BUYING_TICK - order._price)/64 << ", with value " << bitmapBids[(BASE_BUYING_TICK - order._price)/64] << std::endl;
-                    std::cout << " The selected bid is " << order._price << ", and the best bid is " << best_ask_bidIdx.second << std::endl;
                     if (order._price > best_ask_bidIdx.second)
                     {                        
                         //If Orders cancelled, Find Next Best Bid Ask
                         
-                        std::cout << "New Best Bid : " << order._price << std::endl;
+                        std::cout << "New Best Bid[" << order._price <<"," << bid_orders[BASE_BUYING_TICK - order._price] << "]" <<  std::endl;
                         best_ask_bidIdx.second = order._price;//*-1+BASE_BUYING_TICK
-                        std::cout << "The best bid qty in the orderbook now is " << bid_orders[BASE_BUYING_TICK - order._price] << std::endl;
                     }
                     
                     
@@ -86,7 +82,7 @@ typedef class OrderBook
                     //If first Ask entering the OrderBook, or ask being inferior to the best Ask
                     if (order._price < best_ask_bidIdx.first)
                     {
-                        std::cout << "New Best Ask : " << order._price << std::endl;
+                        std::cout << "New Best Ask[" << order._price <<"," << ask_orders[order._price - BASE_SELLING_TICK] << "]" <<  std::endl;
                         best_ask_bidIdx.first = order._price;//+BASE_SELLING_TICK
                     }
                 }
@@ -129,14 +125,14 @@ typedef class OrderBook
                 if (bitmap[i] != 0)
                 {
                     uint64_t highestpos = __builtin_ctzll(bitmap[i]);
-                    std::cout << "New Top Of the Book ! Best " << (side == Side::Sell ? "Ask" : "Bid") << " is " << (side == Side::Sell ? i*64+highestpos + BASE_SELLING_TICK : BASE_BUYING_TICK - i*64+highestpos )  << std::endl;
+                    std::cout << "New Top Of the Book ! Best " << (side == Side::Sell ? "Ask" : "Bid") << " is " << (side == Side::Sell ? (i*64+highestpos) + BASE_SELLING_TICK : BASE_BUYING_TICK - (i*64+highestpos) )  << std::endl;
                     if (side == Side::Sell)
                     {
-                        best_ask_bidIdx.first = i*64+highestpos;
+                        best_ask_bidIdx.first = i*64+highestpos + BASE_SELLING_TICK;
                     }
                     else
                     {
-                        best_ask_bidIdx.second = i*64+highestpos;
+                        best_ask_bidIdx.second = BASE_BUYING_TICK - i*64+highestpos;
                     }
                     return;
                 }
@@ -199,16 +195,17 @@ typedef class OrderBook
         void                    matchingUpdate()
         {
             std::cout << "[in " << __func__ << "]" << std::endl;
-            uint32_t maxQty = std::min(ask_orders[best_ask_bidIdx.first], bid_orders[best_ask_bidIdx.second]);
-            ask_orders[best_ask_bidIdx.first - BASE_SELLING_TICK] -= maxQty;
-            bid_orders[BASE_BUYING_TICK - best_ask_bidIdx.second] -= maxQty;
-            std::cout << "Before the conditions of FindtopofTHe book" << std::endl;
-            if (ask_orders[best_ask_bidIdx.first] == 0)
+            uint32_t minQty = std::min(ask_orders[best_ask_bidIdx.first - BASE_SELLING_TICK], bid_orders[BASE_BUYING_TICK - best_ask_bidIdx.second]);
+            ask_orders[best_ask_bidIdx.first - BASE_SELLING_TICK] -= minQty;
+            bid_orders[BASE_BUYING_TICK - best_ask_bidIdx.second] -= minQty;
+            
+
+            if (ask_orders[best_ask_bidIdx.first - BASE_SELLING_TICK] == 0)
             {
                 bitmapAsks[(best_ask_bidIdx.first - BASE_SELLING_TICK)/64] &= ~(1ULL << (best_ask_bidIdx.first - BASE_SELLING_TICK) % 64);
                 findTopOfTheBook(Side::Sell, bitmapAsks, (best_ask_bidIdx.first - BASE_SELLING_TICK)/64);
             }
-            if (ask_orders[best_ask_bidIdx.second] == 0)
+            if (bid_orders[BASE_BUYING_TICK - best_ask_bidIdx.second] == 0)
             {
                 bitmapBids[(BASE_BUYING_TICK - best_ask_bidIdx.second)/64] &= ~(1ULL << (BASE_BUYING_TICK - best_ask_bidIdx.second) % 64);
                 findTopOfTheBook(Side::Buy, bitmapBids, (BASE_BUYING_TICK - best_ask_bidIdx.second)/64);

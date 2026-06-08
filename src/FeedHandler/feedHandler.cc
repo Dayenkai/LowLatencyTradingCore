@@ -4,6 +4,17 @@
 #include "../../includes/NicReplay.h"
 #include "../../includes/MatchingEngine.h"
 
+template<typename T>
+inline void    fillValueLe(T &dest, std::byte* val)
+{
+    memcpy(&dest, val, sizeof(dest));
+
+    if (std::endian::native == std::endian::big)
+    {
+        dest = std::byteswap(dest);
+    }
+}
+
 void    buildOrder(Msg &msg, Order &order)
 {
     order._qty = msg._qty;
@@ -13,14 +24,15 @@ void    buildOrder(Msg &msg, Order &order)
     order._event_type = static_cast<Order_Type>(msg._event_type);
 }
 
-void    parse(RxDesc &desc, Msg &msg)
+inline void    parse(RxDesc &desc, Msg &msg)
 {
-    msg._id            = static_cast<uint32_t>(*desc.addr) | static_cast<uint32_t>(*(desc.addr + 1)) << CHAR_BIT | static_cast<uint32_t>(*(desc.addr + 2)) << 2 * CHAR_BIT | static_cast<uint32_t>(*(desc.addr + 3)) << 3 * CHAR_BIT;
-    msg._instr         = static_cast<uint32_t>(*desc.addr + 4) | static_cast<uint32_t>(*(desc.addr + 5)) <<  CHAR_BIT | static_cast<uint32_t>(*(desc.addr + 6)) << 2 * CHAR_BIT | static_cast<uint32_t>(*(desc.addr + 7)) << 3 * CHAR_BIT;
-    msg._side          = static_cast<uint8_t>(*(desc.addr + 12));
-    msg._event_type    = static_cast<uint8_t>(*(desc.addr + 13));
-    msg._price         = static_cast<uint32_t>(*(desc.addr + 14)) | static_cast<uint32_t>(*(desc.addr + 15)) <<  CHAR_BIT | static_cast<uint32_t>(*(desc.addr + 16)) << 2 * CHAR_BIT | static_cast<uint32_t>(*(desc.addr + 17)) << 3 * CHAR_BIT;
-    msg._qty           = static_cast<uint32_t>(*(desc.addr + 18)) | static_cast<uint16_t>(*(desc.addr + 19)) <<  CHAR_BIT | static_cast<uint16_t>(*(desc.addr + 20)) << 2 * CHAR_BIT | static_cast<uint16_t>(*(desc.addr + 21)) << 3 * CHAR_BIT;
+    fillValueLe<uint32_t>(msg._id, reinterpret_cast<std::byte*>(desc.addr + dataOffsets[0]));// static_cast<uint32_t>(*desc.addr) | static_cast<uint32_t>(*(desc.addr + static_cast<size_t>(dataSize[0]/4))) << CHAR_BIT | static_cast<uint32_t>(*(desc.addr + 2)) << 2 * CHAR_BIT | static_cast<uint32_t>(*(desc.addr + 3)) << 3 * CHAR_BIT;
+    fillValueLe<uint32_t>(msg._instr, reinterpret_cast<std::byte*>(desc.addr + dataOffsets[1]));// static_cast<uint32_t>(*desc.addr + 4) | static_cast<uint32_t>(*(desc.addr + 5)) <<  CHAR_BIT | static_cast<uint32_t>(*(desc.addr + 6)) << 2 * CHAR_BIT | static_cast<uint32_t>(*(desc.addr + 7)) << 3 * CHAR_BIT;
+    fillValueLe<uint8_t>(msg._side, reinterpret_cast<std::byte*>(desc.addr + dataOffsets[3])); //static_cast<uint8_t>(*(desc.addr + 12));
+    fillValueLe<uint8_t>(msg._event_type, reinterpret_cast<std::byte*>(desc.addr + dataOffsets[4]));
+    fillValueLe<uint8_t>(msg._kind, reinterpret_cast<std::byte*>(desc.addr + dataOffsets[5]));
+    fillValueLe<uint32_t>(msg._price, reinterpret_cast<std::byte*>(desc.addr + dataOffsets[6]));
+    fillValueLe<uint32_t>(msg._qty, reinterpret_cast<std::byte*>(desc.addr + dataOffsets[7]));
 }
 
 int  feedHandler(MemoryPool &pool, uint32_t &coreId)

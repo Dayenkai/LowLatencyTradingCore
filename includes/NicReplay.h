@@ -5,6 +5,7 @@
 #include "MemoryPool.h"
 #include "PersonnalLibrary.h"
 #include "NicReplay.h"
+#include "Constants.h"
 
 typedef struct Channel
 {
@@ -36,13 +37,14 @@ typedef struct Channel
         {
             if (line.length() >= PACKET_ENTRY_SIZE)
             {
-                uint32_t       seq   = std::stoi(line.substr(0, 9));
-                std::string    instr = line.substr(9, 4);
-                uint32_t       id    = std::stoi(line.substr(13, 9));
-                uint8_t        side  = std::stoi(line.substr(22, 1));
-                uint8_t        type  = std::stoi(line.substr(23, 1));
-                uint32_t       price = std::stoi(line.substr(24, 9));
-                uint32_t       qty   = std::stoi(line.substr(33, 9));
+                uint32_t       seq   = std::stoi(line.substr(fieldPositions[0].first, fieldPositions[0].second));
+                std::string    instr = line.substr(fieldPositions[1].first, fieldPositions[1].second);
+                uint32_t       id    = std::stoi(line.substr(fieldPositions[2].first, fieldPositions[2].second));
+                uint8_t        side  = std::stoi(line.substr(fieldPositions[3].first, fieldPositions[3].second));
+                uint8_t        type  = std::stoi(line.substr(fieldPositions[4].first, fieldPositions[4].second));
+                uint8_t        kind  = std::stoi(line.substr(fieldPositions[5].first, fieldPositions[5].second));
+                uint32_t       price = std::stoi(line.substr(fieldPositions[6].first, fieldPositions[6].second));
+                uint32_t       qty   = std::stoi(line.substr(fieldPositions[7].first, fieldPositions[7].second));
 
                 //std::cout << "Seq = " << seq << ", instr = " << instr << ", id = " << id << ", side = " << (uint64_t)side << ", type = " << (uint64_t)type << ", price = " << price << ", qty = " << qty << std::endl;
                 byteEncoder(seq, wireData);
@@ -50,6 +52,7 @@ typedef struct Channel
                 byteEncoder(id, wireData);
                 byteEncoder(side, wireData);
                 byteEncoder(type, wireData);
+                byteEncoder(kind, wireData);
                 byteEncoder(price, wireData);
                 byteEncoder(qty, wireData);
                 //std::cout << std::endl;

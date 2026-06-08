@@ -41,6 +41,7 @@ typedef struct alignas(64) Msg
     uint32_t                 _instr;
     uint32_t                 _price;
     uint32_t                 _qty;
+    uint8_t                  _kind;
     uint8_t                  _event_type;
     uint8_t                  _side;
 }Msg;
@@ -59,6 +60,7 @@ typedef struct alignas(64) Order
     uint16_t        _id;
     Side            _side;
     Order_Type     _event_type;
+    OrderQtyKind   _kind;
 }Order;
 
 

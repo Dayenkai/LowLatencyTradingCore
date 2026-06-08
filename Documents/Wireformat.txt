@@ -1,4 +1,15 @@
-WirePacketFormat :
+WirePacketFormat
 
-[SequenceNumber][MarketIdentifier][ClientId][Side][Type][Price][Quantity]
+<-- Format --> 
+[SequenceNumber]      [MarketIdentifier]   [ClientId]           [Side]                [Type]                [OrderKind]             [Price]                 [Quantity]
+[Integer|Length(9)] - [String|Length(4)] - [Integer|Length(9)]- [Integer|Length(1)] - [Integer|Length(1)] - [Integer|Length(1)]  -  [Integer|Length(9)]  -  [Integer|Length(9)]
 
+<-- Description -->
+SequenceNumber : (Unique Order Identifier) - 
+MarketIdentifier : (Market Key Identifier)
+ClientId : (Order's Issuer Identifier)
+Side :  (Market Counterparty Side Identifier | Sell or Buy)
+Type :  (Order Movement Description | AddOrder, UpdateOrder, CancelOrder)
+OrderKind : (Order Scope Description | GoodTillCanceled GTC, Limit ImmediateOrCancel IOC, MarketOrder, Limit FOK FillOrKill, Market FOK)
+Price : (Integer Ranged)
+Quantity : (Integer Ranged)
