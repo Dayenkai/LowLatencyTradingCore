@@ -46,7 +46,7 @@ typedef struct Channel
                 uint32_t       price = std::stoi(line.substr(fieldPositions[6].first, fieldPositions[6].second));
                 uint32_t       qty   = std::stoi(line.substr(fieldPositions[7].first, fieldPositions[7].second));
 
-                //std::cout << "Seq = " << seq << ", instr = " << instr << ", id = " << id << ", side = " << (uint64_t)side << ", type = " << (uint64_t)type << ", price = " << price << ", qty = " << qty << std::endl;
+                //std::cout << "Seq = " << seq << ", instr = " << instr << ", id = " << id << ", side = " << (uint64_t)side << ", type = " << (uint64_t)type << ", kind = " << (uint64_t)kind << ", price = " << price << ", qty = " << qty << std::endl;
                 byteEncoder(seq, wireData);
                 byteEncoder(*(reinterpret_cast<uint32_t*>(instr.data())), wireData);
                 byteEncoder(id, wireData);
@@ -55,7 +55,6 @@ typedef struct Channel
                 byteEncoder(kind, wireData);
                 byteEncoder(price, wireData);
                 byteEncoder(qty, wireData);
-                //std::cout << std::endl;
             }
         }
     }

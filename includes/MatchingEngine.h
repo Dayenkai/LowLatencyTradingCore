@@ -18,7 +18,7 @@ class   MatchingEngine
             book.addOrder(order);
             break;
 
-            case static_cast<uint32_t>(Order_Type::TRADE) :
+            case static_cast<uint32_t>(Order_Type::UPDATE) :
             break;
 
             case static_cast<uint32_t>(Order_Type::CANCEL) :

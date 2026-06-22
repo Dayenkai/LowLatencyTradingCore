@@ -1,15 +1,18 @@
 WirePacketFormat
 
 <-- Format --> 
-[SequenceNumber]      [MarketIdentifier]   [ClientId]           [Side]                [Type]                [OrderKind]             [Price]                 [Quantity]
-[Integer|Length(9)] - [String|Length(4)] - [Integer|Length(9)]- [Integer|Length(1)] - [Integer|Length(1)] - [Integer|Length(1)]  -  [Integer|Length(9)]  -  [Integer|Length(9)]
+Columns Name  -> [SequenceNumber]      [MarketIdentifier]   [ClientId]           [Side]                [Type]                [OrderKind]             [Price]                 [Quantity]
+Type & Length -> [Integer|Length(9)] - [String|Length(4)] - [Integer|Length(9)]- [Integer|Length(1)] - [Integer|Length(1)] - [Integer|Length(1)]  -  [Integer|Length(9)]  -  [Integer|Length(9)]
+Position      -> [0]                   [9]                  [13]                 [22]                  [23]                  [24]                    [25]                    [34]                   
+
 
 <-- Description -->
 SequenceNumber : (Unique Order Identifier) - 
 MarketIdentifier : (Market Key Identifier)
 ClientId : (Order's Issuer Identifier)
-Side :  (Market Counterparty Side Identifier | Sell or Buy)
-Type :  (Order Movement Description | AddOrder, UpdateOrder, CancelOrder)
-OrderKind : (Order Scope Description | GoodTillCanceled GTC, Limit ImmediateOrCancel IOC, MarketOrder, Limit FOK FillOrKill, Market FOK)
+Side :  (Market Counterparty Side Identifier | Sell or Buy | 1 or 0)
+Type :  (Order Description | AddOrder, UpdateOrder, CancelOrder | 0, 1 or 2)
+OrderKind : (Order Scope Description | GoodTillCanceled GTC, Limit ImmediateOrCancel IOC, MarketOrder, Limit FOK FillOrKill, Market FOK | 
+             0, 1, 2, 3, 4)
 Price : (Integer Ranged)
 Quantity : (Integer Ranged)

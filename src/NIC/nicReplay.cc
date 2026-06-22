@@ -25,17 +25,17 @@ int     NicReplay(std::vector<Channel>   &channels, std::vector<MemoryPool> &mem
             {
                
                 memoryPool[i].rxRingDesc.head.load(std::memory_order_acquire);
-                memcpy(memoryPool[i].arena[packetCount], reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb), dataSize[0]);//SequenceId
-                memcpy(memoryPool[i].arena[packetCount] + dataSize[0], reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataSize[0]), static_cast<size_t>(dataSize[1]/4));//First Letter of MarketId
-                memcpy(memoryPool[i].arena[packetCount] + dataSize[0] + static_cast<size_t>(dataSize[1]/4), reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataSize[0] + static_cast<size_t>(dataSize[1]/4)), static_cast<size_t>(dataSize[1]/4));//Second Letter of MarketId
-                memcpy(memoryPool[i].arena[packetCount] + dataSize[0] + static_cast<size_t>(dataSize[1]/2), reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataSize[0] + static_cast<size_t>(dataSize[1]/2)), static_cast<size_t>(dataSize[1]/4));//Third Letter of MarketId
-                memcpy(memoryPool[i].arena[packetCount] + dataSize[0] + static_cast<size_t>(dataSize[1]/2) + static_cast<size_t>(dataSize[1]/4), reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataSize[0] + static_cast<size_t>(dataSize[1]/2) + static_cast<size_t>(dataSize[1]/4)), static_cast<size_t>(dataSize[1]/4));//Fourth Letter of MarketId
-                memcpy(memoryPool[i].arena[packetCount] + dataSize[0] + dataSize[1], reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataSize[0] + dataSize[1]), dataSize[2]);//ClientId
-                memcpy(memoryPool[i].arena[packetCount] + dataSize[0] + dataSize[1] + dataSize[2], reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataSize[0] + dataSize[1] + dataSize[2]), dataSize[3]);//Side
-                memcpy(memoryPool[i].arena[packetCount] + dataSize[0] + dataSize[1] + dataSize[2] + dataSize[3], reinterpret_cast<void*>(channels[i]._channelContent.data() + dataSize[0] + dataSize[1] + dataSize[2] + dataSize[3]), dataSize[4]);//Type
-                memcpy(memoryPool[i].arena[packetCount] + dataSize[0] + dataSize[1] + dataSize[2] + dataSize[3] + dataSize[4], reinterpret_cast<void*>(channels[i]._channelContent.data() + dataSize[0] + dataSize[1] + dataSize[2] + dataSize[3] + dataSize[4]), dataSize[5]);//Kind
-                memcpy(memoryPool[i].arena[packetCount] + dataSize[0] + dataSize[1] + dataSize[2] + dataSize[3] + dataSize[4] + dataSize[5], reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataSize[0] + dataSize[1] + dataSize[2] + dataSize[3] + dataSize[4] + dataSize[5]), dataSize[6]);
-                memcpy(memoryPool[i].arena[packetCount] + dataSize[0] + dataSize[1] + dataSize[2] + dataSize[3] + dataSize[4] + dataSize[5] + dataSize[6], reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataSize[0] + dataSize[1] + dataSize[2] + dataSize[3] + dataSize[4] + dataSize[5] + dataSize[6]), dataSize[7]);
+                memcpy(memoryPool[i].arena[packetCount] + dataOffsets[0], reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb), dataSize[0]);//SequenceId
+                memcpy(memoryPool[i].arena[packetCount] + dataOffsets[1], reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataOffsets[1]), sizeof(uint8_t));//First Letter of MarketId
+                memcpy(memoryPool[i].arena[packetCount] + dataOffsets[1] + sizeof(uint8_t), reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataOffsets[1] + sizeof(uint8_t)), sizeof(uint8_t));//Second Letter of MarketId
+                memcpy(memoryPool[i].arena[packetCount] + dataOffsets[1] + 2 * sizeof(uint8_t), reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataOffsets[1] + 2 * sizeof(uint8_t)), sizeof(uint8_t));//Third Letter of MarketId
+                memcpy(memoryPool[i].arena[packetCount] + dataOffsets[1] + 3 * sizeof(uint8_t), reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataOffsets[1] + 3 * sizeof(uint8_t)), sizeof(uint8_t));//Fourth Letter of MarketId
+                memcpy(memoryPool[i].arena[packetCount] + dataOffsets[2], reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataOffsets[2]), dataSize[2]);//ClientId
+                memcpy(memoryPool[i].arena[packetCount] + dataOffsets[3], reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataOffsets[3]), dataSize[3]);//Side
+                memcpy(memoryPool[i].arena[packetCount] + dataOffsets[4], reinterpret_cast<void*>(channels[i]._channelContent.data() + dataOffsets[4]), dataSize[4]);//Type
+                memcpy(memoryPool[i].arena[packetCount] + dataOffsets[5], reinterpret_cast<void*>(channels[i]._channelContent.data() + dataOffsets[5]), dataSize[5]);//Order Kind
+                memcpy(memoryPool[i].arena[packetCount] + dataOffsets[6], reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataOffsets[6]), dataSize[6]);//Price
+                memcpy(memoryPool[i].arena[packetCount] + dataOffsets[7], reinterpret_cast<void*>(channels[i]._channelContent.data() + byteNb + dataOffsets[7]), dataSize[7]);//Quantity
                 memoryPool[i].rxRingDesc.data[packetCount & (RX_RING_SIZE - 1)].addr = memoryPool[i].arena[packetCount];
                 memoryPool[i].rxRingDesc.data[packetCount & (RX_RING_SIZE - 1)].len  = static_cast<uint8_t>(BYTES_NB_PER_ENTRY);
                 byteNb+=static_cast<uint64_t>(BYTES_NB_PER_ENTRY);

@@ -15,7 +15,7 @@
 //ORDER_BOOK
 enum class Order_Type : uint8_t
 {
-    ADD = 0, TRADE = 1, CANCEL = 2
+    ADD = 0, UPDATE = 1, CANCEL = 2
 };
 
 enum class Side : bool
@@ -57,13 +57,13 @@ std::array<size_t, 8>                          dataSize{{{sizeof(uint32_t)},//Se
 //MarketDataFormat  Columns {Offsets}             
 inline constexpr
 std::array<size_t, 8>                          dataOffsets{{{0},//SeqId 
-                                               {sizeof(uint32_t)},//MarketId 
-                                               {sizeof(uint32_t) + dataOffsets[1]},//ClientId 
-                                               {sizeof(uint8_t) + dataOffsets[2]},//Side 
-                                               {sizeof(uint8_t) + dataOffsets[3]},//Type 
-                                               {sizeof(uint8_t) + dataOffsets[4]},//OrderKind 
-                                               {sizeof(uint32_t) + dataOffsets[5]},//Price 
-                                               {sizeof(uint32_t) + dataOffsets[6]}}};//Quantity
+                                               {dataSize[0]},//MarketId 
+                                               {dataSize[1] + dataOffsets[1]},//ClientId 
+                                               {dataSize[2] + dataOffsets[2]},//Side
+                                               {dataSize[3] + dataOffsets[3]},//Type 
+                                               {dataSize[4] + dataOffsets[4]},//OrderKind 
+                                               {dataSize[5] + dataOffsets[5]},//Price 
+                                               {dataSize[6] + dataOffsets[6]}}};//Quantity
 
 #define BAND_SIZE                   10960000
 #define BITMAP_SIZE                 171250
