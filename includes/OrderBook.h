@@ -161,31 +161,54 @@ typedef class OrderBook
                         {
                             top_of_the_book_.best_ask = out_of_band_asks.begin()->first;
                             top_of_the_book_.best_ask_qty = out_of_band_asks.begin()->second;
+                            top_of_the_book_.ask_out_of_band = true;
                             return;
                         }
                         top_of_the_book_.best_ask = i*64+highestpos + BASE_SELLING_TICK;
                         top_of_the_book_.best_ask_qty = ask_orders[i*64+highestpos];
+                        top_of_the_book_.ask_out_of_band = false;
                     }
                     else
                     {
-                        if (!out_of_band_bids.empty() && out_of_band_bids.begin()->first > BASE_BUYING_TICK - i*64+highestpos) [[unlikely]]
+                        if (!out_of_band_bids.empty() && out_of_band_bids.begin()->first > i*64+highestpos) [[unlikely]]
                         {
                             top_of_the_book_.best_bid = out_of_band_bids.begin()->first;
                             top_of_the_book_.best_bid_qty = out_of_band_bids.begin()->second;
+                            top_of_the_book_.ask_out_of_band = true;
                             return;
                         }
                         top_of_the_book_.best_bid = i*64+highestpos;
+                        top_of_the_book_.best_bid_qty = ask_orders[BASE_BUYING_TICK-i*64+highestpos];
+                        top_of_the_book_.ask_out_of_band = false;
                     }
                     return;
                 }
             }
             if (side == Side::Sell)
             {
-                top_of_the_book_.best_ask = out_of_band_asks.begin()->first;
+                if (!out_of_band_asks.empty())[[unlikely]]
+                {
+                    top_of_the_book_.best_ask = out_of_band_asks.begin()->first;
+                    top_of_the_book_.best_bid_qty = out_of_band_asks.begin()->second;
+                    top_of_the_book_.ask_out_of_band = true;
+                    return;
+                }
+                top_of_the_book_.best_ask = BAND_SIZE-1;
+                top_of_the_book_.best_ask_qty = 0;
+                top_of_the_book_.ask_out_of_band = false;
             }
             else
             {
-                top_of_the_book_.best_bid = out_of_band_bids.begin()->first;
+                if (!out_of_band_bids.empty())[[unlikely]]
+                {
+                    top_of_the_book_.best_bid = out_of_band_bids.begin()->first;
+                    top_of_the_book_.best_bid_qty = out_of_band_bids.begin()->second;
+                    top_of_the_book_.ask_out_of_band = true;
+                    return;
+                }
+                top_of_the_book_.best_bid = 0;
+                top_of_the_book_.best_bid_qty = 0;
+                top_of_the_book_.bid_out_of_band = false;
             }
         }
 
