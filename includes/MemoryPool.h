@@ -39,8 +39,8 @@ typedef struct alignas(64) Msg
 {
     uint32_t                 _id;
     uint32_t                 _instr;
-    uint32_t                 _price;
-    uint32_t                 _qty;
+    uint32_t                 price_;
+    uint32_t                 qty_;
     uint8_t                  _kind;
     uint8_t                  _event_type;
     uint8_t                  _side;
@@ -52,11 +52,11 @@ typedef struct alignas(64) Order
     {
         
     }
-    Order(uint32_t qty, uint32_t price, Side side, uint16_t id, Order_Type type) : _qty(qty), _price(price), _side(side), _id(id), _event_type(type)
+    Order(uint32_t qty, uint32_t price, Side side, uint16_t id, Order_Type type) : qty_(qty), price_(price), _side(side), _id(id), _event_type(type)
     {
     }
-    uint32_t        _qty;
-    uint32_t        _price;
+    uint32_t        qty_;
+    uint32_t        price_;
     uint16_t        _id;
     Side            _side;
     Order_Type     _event_type;

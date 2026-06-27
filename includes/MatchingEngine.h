@@ -29,10 +29,10 @@ class   MatchingEngine
         
 
         //Check Matching
-        std::pair<uint32_t, uint32_t>   &best_ask_bid = book.topOfTheBook();       
-        while (book.getAskOrders()[best_ask_bid.first-BASE_SELLING_TICK] != 0 && book.getBidOrders()[-1*(best_ask_bid.second)+BASE_BUYING_TICK] != 0 && best_ask_bid.second >= best_ask_bid.first)
+        OrderBook::TopOfTheBook   &top_of_the_book = book.topOfTheBook();  
+        while (top_of_the_book.best_bid >= top_of_the_book.best_ask && top_of_the_book.best_ask_qty > 0 && top_of_the_book.best_bid_qty > 0)
         {
-            std::cout << "MATCHING between ask[" << best_ask_bid.first << "," << book.getAskOrders()[best_ask_bid.first-BASE_SELLING_TICK] << "] and bid [" << best_ask_bid.second << "," << book.getBidOrders()[BASE_BUYING_TICK-best_ask_bid.second] << "]" << std::endl;
+            std::cout << "MATCHING between ask[" << top_of_the_book.best_ask << "," << top_of_the_book.best_ask_qty << "] and bid [" << top_of_the_book.best_bid << "," << top_of_the_book.best_bid_qty << "]" << std::endl;
             book.matchingUpdate();
         }
         
