@@ -74,11 +74,13 @@ int  feedHandler(MemoryPool &pool, uint32_t &coreId)
                 //std::cout << "ORDER NB" << orderNb << std::endl;
             }
             pool.rxRingDesc.tail.store((pool.rxRingDesc.tail + 1) & (RX_RING_SIZE - 1), std::memory_order_release); 
-            if (orderNb == 10)
+            if (orderNb == 13)
             {
                 matchingEngine.getOrderBook().ListOrder(Side::Buy);
                 matchingEngine.getOrderBook().ListOrder(Side::Sell);
-                //std::cout << "Data processing took " << ns << " ns\n" << std::endl;
+                OrderBook::TopOfTheBook &top_of_the_book = matchingEngine.getOrderBook().topOfTheBook();
+                std::cout << "The top of the book is : " << std::endl << "Ask : [" << top_of_the_book.best_ask << ", " << top_of_the_book.best_ask_qty << "]" << std::endl;
+                std::cout << "Bid : [" << top_of_the_book.best_bid << ", " << top_of_the_book.best_bid_qty << "]" << std::endl;
             }
         }
     }

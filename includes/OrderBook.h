@@ -12,7 +12,7 @@ typedef class OrderBook
             bitmapBids.resize(BITMAP_SIZE);
             bitmapAsks.resize(BITMAP_SIZE);
 
-            top_of_the_book_.best_ask = BAND_SIZE-1;
+            top_of_the_book_.best_ask = UINT32_MAX;
             top_of_the_book_.best_ask_qty = 0;
             top_of_the_book_.ask_out_of_band = false;
 
@@ -56,7 +56,6 @@ typedef class OrderBook
                         }
                         return;
                     }
-
                     out_of_band_bids[order.price_] += order.qty_;
                     if (order.price_ >= top_of_the_book_.best_bid)
                     {
@@ -154,7 +153,7 @@ typedef class OrderBook
                 if (bitmap[i] != 0)
                 {
                     uint64_t highestpos = __builtin_ctzll(bitmap[i]);
-                    std::cout << "New Top Of the Book ! Best " << (side == Side::Sell ? "Ask" : "Bid") << " is " << (side == Side::Sell ? (i*64+highestpos) + BASE_SELLING_TICK : BASE_BUYING_TICK - (i*64+highestpos) )  << std::endl;
+                    std::cout << "New Top Of the Book found in normal range ! Best " << (side == Side::Sell ? "Ask" : "Bid") << " is " << (side == Side::Sell ? (i*64+highestpos) + BASE_SELLING_TICK : BASE_BUYING_TICK - (i*64+highestpos) )  << std::endl;
                     if (side == Side::Sell)
                     {
                         if (!out_of_band_asks.empty() && out_of_band_asks.begin()->first < i*64+highestpos + BASE_SELLING_TICK) [[unlikely]]
@@ -170,15 +169,15 @@ typedef class OrderBook
                     }
                     else
                     {
-                        if (!out_of_band_bids.empty() && out_of_band_bids.begin()->first > i*64+highestpos) [[unlikely]]
+                        if (!out_of_band_bids.empty() && out_of_band_bids.begin()->first > BASE_BUYING_TICK - i*64+highestpos) [[unlikely]]
                         {
                             top_of_the_book_.best_bid = out_of_band_bids.begin()->first;
                             top_of_the_book_.best_bid_qty = out_of_band_bids.begin()->second;
                             top_of_the_book_.ask_out_of_band = true;
                             return;
                         }
-                        top_of_the_book_.best_bid = i*64+highestpos;
-                        top_of_the_book_.best_bid_qty = ask_orders[BASE_BUYING_TICK-i*64+highestpos];
+                        top_of_the_book_.best_bid = BASE_BUYING_TICK - i*64+highestpos;
+                        top_of_the_book_.best_bid_qty = bid_orders[i*64+highestpos];
                         top_of_the_book_.ask_out_of_band = false;
                     }
                     return;
@@ -193,7 +192,7 @@ typedef class OrderBook
                     top_of_the_book_.ask_out_of_band = true;
                     return;
                 }
-                top_of_the_book_.best_ask = BAND_SIZE-1;
+                top_of_the_book_.best_ask = UINT32_MAX;
                 top_of_the_book_.best_ask_qty = 0;
                 top_of_the_book_.ask_out_of_band = false;
             }
@@ -219,19 +218,64 @@ typedef class OrderBook
                 auto bbt = static_cast<uint64_t>(BASE_BUYING_TICK);
                 auto bst = static_cast<uint64_t>(BASE_SELLING_TICK);
                 double orderprice_ = 0.0f;
+                auto itOOBB = out_of_band_bids.begin();
+                auto itOOBA = out_of_band_asks.begin();
+                bool outOfBandPriority = false;
+
+                uint32_t    qty;
                 for (int i = 0; i < lvlPrices.size(); i++)
                 {
                     if (lvlPrices[i] > 0)
                     {
                         if (side == Side::Buy)
                         {
-                            orderprice_ = static_cast<double>((bbt - i) / (double)10000);
+                            if (itOOBB != out_of_band_bids.end() && itOOBB->first >= bbt - i) [[unlikely]]
+                            {
+                                orderprice_ = static_cast<double>((itOOBB->first) / (double)10000);
+                                itOOBB++;
+                                outOfBandPriority = true;
+                                qty = itOOBB->second;
+                            }
+                            else
+                            {
+                                orderprice_ = static_cast<double>((bbt - i) / (double)10000);
+                                qty = lvlPrices[i];
+                            }
                         }
                         else
                         {
-                            orderprice_ = static_cast<double>((bst + i) / (double)10000);
+                            if (itOOBA != out_of_band_bids.end() && itOOBA->first <= bst + i) [[unlikely]]
+                            {
+                                orderprice_ = static_cast<double>((itOOBA->first) / (double)10000);
+                                itOOBA++;
+                                outOfBandPriority = true;
+                                qty = itOOBB->second;
+                            }
+                            else
+                            {
+                                qty = lvlPrices[i];
+                                orderprice_ = static_cast<double>((bst + i) / (double)10000);
+                            }
                         }
-                        std::cout << "Lvl Order Price " << std::fixed << orderprice_ << " (index = " <<  i << ", Quantity : " << lvlPrices[i] << std::endl; 
+                        std::cout << "Lvl Order Price " << std::fixed << orderprice_ << " (index = " <<  (outOfBandPriority ? i-- : i) << ", Quantity : " << qty << std::endl; 
+                        outOfBandPriority = false;
+                    }
+                }
+                if (side == Side::Buy)
+                {
+                    for (itOOBB; itOOBB != out_of_band_bids.end(); itOOBB++)
+                    {
+                        orderprice_ = static_cast<double>((itOOBB->first) / (double)10000);
+                        std::cout << "Lvl Order Price " << std::fixed << orderprice_ << ", Quantity : " << itOOBB->second << std::endl; 
+                    }
+
+                }
+                else
+                {
+                    for (itOOBA; itOOBA != out_of_band_asks.end(); itOOBA++)
+                    {
+                        orderprice_ = static_cast<double>((itOOBA->first) / (double)10000);
+                        std::cout << "Lvl Order Price " << std::fixed << orderprice_ << ", Quantity : " << itOOBA->second << std::endl; 
                     }
                 }
             };
@@ -259,12 +303,19 @@ typedef class OrderBook
 
         void                    matchingUpdate()
         {
+            bool                hasBeenOutOfBandAsks = true;
+            bool                hasBeenOutOfBandBids = true;
+
             std::cout << "[in " << __func__ << "]" << std::endl;
             uint32_t minQty = std::min(top_of_the_book_.best_ask_qty, top_of_the_book_.best_bid_qty);
+
+            top_of_the_book_.best_ask_qty -= minQty;
+            top_of_the_book_.best_bid_qty -= minQty;
+
             if (top_of_the_book_.ask_out_of_band == false)
             {
+                hasBeenOutOfBandAsks = false;
                 ask_orders[top_of_the_book_.best_ask - BASE_SELLING_TICK] -= minQty;
-                top_of_the_book_.best_ask_qty -= minQty;
                 if (top_of_the_book_.best_ask_qty == 0)
                 {
                     bitmapAsks[(top_of_the_book_.best_ask - BASE_SELLING_TICK)/64] &= ~(1ULL << (top_of_the_book_.best_ask - BASE_SELLING_TICK) % 64);
@@ -273,8 +324,8 @@ typedef class OrderBook
             }
             if (top_of_the_book_.bid_out_of_band == false)
             {
+                hasBeenOutOfBandBids = false;
                 bid_orders[BASE_BUYING_TICK - top_of_the_book_.best_bid] -= minQty;
-                top_of_the_book_.best_bid_qty -= minQty;
                 if (top_of_the_book_.best_bid_qty == 0)
                 {
                     bitmapBids[(BASE_BUYING_TICK - top_of_the_book_.best_bid)/64] &= ~(1ULL << (BASE_BUYING_TICK - top_of_the_book_.best_bid) % 64);
@@ -283,24 +334,34 @@ typedef class OrderBook
             }
 
 
-            if (top_of_the_book_.ask_out_of_band == true) [[unlikely]]
+            if (hasBeenOutOfBandAsks) [[unlikely]]
             {
-                auto it = out_of_band_bids.begin();
-                it->second -= minQty;
-                if (it->second == 0)
+                if (!out_of_band_asks.empty())
                 {
-                    out_of_band_bids.erase(it);
+                    std::cout << " Matching ask update top of the book" << std::endl;
+                    auto it = out_of_band_asks.begin();
+                    it->second -= minQty;
+                    if (it->second == 0)
+                    {
+                        std::cout << "Erasing " << it->second  << "..." << std::endl;
+                        out_of_band_asks.erase(it);
+                    }
                 }
                 findTopOfTheBook(Side::Sell, bitmapAsks, 0);
                 
             }
-            if (top_of_the_book_.bid_out_of_band == true) [[unlikely]]
+            if (hasBeenOutOfBandBids) [[unlikely]]
             {
-                auto it = out_of_band_bids.begin();
-                it->second -= minQty;
-                if (it->second == 0)
+                std::cout << " Matching bid update top of the book" << std::endl;
+                if (!out_of_band_bids.empty())
                 {
-                    out_of_band_asks.erase(it);
+                    auto it = out_of_band_bids.begin();
+                    it->second -= minQty;
+                    if (it->second == 0)
+                    {
+                        std::cout << "Erasing " << it->second  << "..." << std::endl;
+                        out_of_band_bids.erase(it);
+                    }
                 }
                 findTopOfTheBook(Side::Buy, bitmapBids, 0);
             }
@@ -329,8 +390,10 @@ typedef class OrderBook
     alignas(64) std::vector<uint32_t>                                           ask_orders;
     alignas(64) std::vector<uint64_t>                                           bitmapBids;
     alignas(64) std::vector<uint64_t>                                           bitmapAsks;
+    alignas(64) std::vector<uint32_t>                                           detailedask_orders;
+
     alignas(64) std::map<uint32_t, uint32_t>                                    out_of_band_asks;
-    alignas(64) std::map<uint32_t, uint32_t>                                    out_of_band_bids;
+    alignas(64) std::map<uint32_t, uint32_t, std::greater<int>>                 out_of_band_bids;
     alignas(64) TopOfTheBook                                                    top_of_the_book_;
 
 }OrderBook;
