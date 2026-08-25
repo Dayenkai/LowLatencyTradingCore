@@ -70,9 +70,11 @@ std::array<size_t, 8>                          dataOffsets{{{0},//SeqId
 #define BASE_SELLING_TICK           10000
 #define BASE_BUYING_TICK            3000000
 
+#define ORDERS_NB_PER_LVL_PER_PAGE  1000
+
 
 //RESOURCES
-#define CHANNELS_LIST_FILE          "MarketData/channelsListFile.txt"
+#define CHANNELS_LIST_FILE          "../trading_engine/MarketData/channelsListFile.txt"
 
 
 //CLIMITS

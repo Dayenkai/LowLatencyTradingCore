@@ -12,6 +12,8 @@ typedef class OrderBook
             bitmapBids.resize(BITMAP_SIZE);
             bitmapAsks.resize(BITMAP_SIZE);
 
+            //price_lvl_order_ids.resize(BAND_SIZE);
+
             top_of_the_book_.best_ask = UINT32_MAX;
             top_of_the_book_.best_ask_qty = 0;
             top_of_the_book_.ask_out_of_band = false;
@@ -43,6 +45,18 @@ typedef class OrderBook
                     if (order.price_ <= BASE_BUYING_TICK)
                     {
                         bid_orders[BASE_BUYING_TICK - order.price_] += order.qty_;
+                        //[id] = qty
+                        //PriceLevel      &price_lvl = price_lvl_order_ids[BASE_BUYING_TICK - order.price_];
+
+                        //In case the nb of orders exceeds 1000 in a particularly price level, we use unfortunately an allocation.
+                        // if (price_lvl.priority == static_cast<uint32_t>(ORDERS_NB_PER_LVL_PER_PAGE) - 1) [[unlikely]]
+                        // {
+                        //     price_lvl.order_ids.emplace_back(std::array<uint32_t, 1000>());
+                        //     price_lvl.priority = 0;        
+                        // }
+                        // price_lvl.order_ids[price_lvl.order_ids.size()-1][price_lvl.priority] = price_lvl.priority;
+                        // price_lvl.priority++;
+
                         bitmapBids[(BASE_BUYING_TICK - order.price_)/64] |= 1ULL << (BASE_BUYING_TICK - order.price_)%64;
 
                         if (order.price_ >= top_of_the_book_.best_bid)
@@ -385,12 +399,20 @@ typedef class OrderBook
         return top_of_the_book_;
     }
 
+    struct      PriceLevel
+    {
+        std::vector<std::array<uint32_t, 1000>>      order_ids = std::vector<std::array<uint32_t, 1000>>(1);
+        uint32_t                                     priority = 0;
+    };
+
     private:
     alignas(64) std::vector<uint32_t>                                           bid_orders;
     alignas(64) std::vector<uint32_t>                                           ask_orders;
+
+    alignas(64) std::vector<PriceLevel>                                         price_lvl_order_ids;
+
     alignas(64) std::vector<uint64_t>                                           bitmapBids;
     alignas(64) std::vector<uint64_t>                                           bitmapAsks;
-    alignas(64) std::vector<uint32_t>                                           detailedask_orders;
 
     alignas(64) std::map<uint32_t, uint32_t>                                    out_of_band_asks;
     alignas(64) std::map<uint32_t, uint32_t, std::greater<int>>                 out_of_band_bids;

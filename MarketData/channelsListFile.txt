@@ -1,3 +1,0 @@
-MarketData/ChannelA.txt
-MarketData/ChannelB.txt
-MarketData/ChannelC.txt
