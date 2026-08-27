@@ -13,3 +13,4 @@ BUILDLOG
 27-08-2026
 - CmakeLists : Adding Json Lohmann Library Linkage (+ Online Package Fetching in case missing)
 - Development start of ITCH-inspired Market Data Protocol v0 [Exchange<->Trading_Engine]
+- New branch Creation (Exchange_Engine)
