@@ -1,6 +1,6 @@
-#include "../includes/CppStandard.h"
-#include "../includes/Engine.h"
-#include "../includes/PersonnalLibrary.h"
+#include "CppStandard.h"
+#include "Engine.h"
+#include "PersonnalLibrary.h"
 
 int main()
 {
