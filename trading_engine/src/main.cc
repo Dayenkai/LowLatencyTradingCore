@@ -1,16 +1,6 @@
-#include "CppStandard.h"
-#include "Engine.h"
-#include "PersonnalLibrary.h"
+#include "TradingEngine.h"
 
-int main()
+int main(int argc, char **argv)
 {
-    if (!TradingEngineSetUp())
-    {
-        log("Running Error. See the logs for more precision.");
-    }
-    else
-    {
-        log("Data Processed. Waiting response from Market server...");
-    }
-    return 0;
+    return startTradingEngine(argc, argv);
 }

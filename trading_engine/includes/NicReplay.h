@@ -35,7 +35,7 @@ typedef struct Channel
 
         while (std::getline(bufferStream, line))
         {
-            if (line.length() >= PACKET_ENTRY_SIZE)
+            if (line.length() >= trading_engine::PACKET_ENTRY_SIZE)
             {
                 uint32_t       seq   = std::stoi(line.substr(fieldPositions[0].first, fieldPositions[0].second));
                 std::string    instr = line.substr(fieldPositions[1].first, fieldPositions[1].second);

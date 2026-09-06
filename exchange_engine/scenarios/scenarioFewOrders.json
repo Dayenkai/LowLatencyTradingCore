@@ -1,26 +1,31 @@
 {
-  "orders": [
-    {
-      "timestamp": 1000,
-      "type": "NEW",
-      "order_id": 1,
-      "side": "BUY",
-      "price": 10000,
-      "quantity": 100
-    },
-    {
-      "timestamp": 1100,
-      "type": "NEW",
-      "order_id": 2,
-      "side": "SELL",
-      "price": 10000,
-      "quantity": 40
-    },
-    {
-      "timestamp": 1200,
-      "type": "CANCEL",
-      "order_id": 1,
-      "quantity": 20
-    }
-  ]
+  "orders": 
+  {
+    "APPL" : [
+      {
+        "timestamp": 1000,
+        "order_id": 1,
+        "price": 10000,
+        "quantity": 100,
+        "side": "BUY",
+        "kind" : "GTC",
+        "type": "NEW"
+      },
+      {
+        "timestamp": 1100,
+        "order_id": 2,
+        "price": 10000,
+        "quantity": 40,
+        "side": "SELL",
+        "kind" : "GTC",
+        "type": "NEW"
+      },
+      {
+        "timestamp": 1200,
+        "order_id": 1,
+        "quantity": 20,
+        "type": "CANCEL"
+      }
+    ]
+  }
 }

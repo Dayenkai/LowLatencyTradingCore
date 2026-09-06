@@ -1,16 +1,11 @@
-#ifndef  ORDER_BOOK_
-#define  ORDER_BOOK_
-
 #include "CppStandard.h"
 #include "MemoryPool.h"
-#include "PersonnalLibrary.h"
+#include "Constants.h"
 
 
 class OrderBook
 {
     public:
-
-        OrderBook();
         struct  TopOfTheBook
         {
             uint32_t    best_ask;
@@ -26,6 +21,7 @@ class OrderBook
             uint32_t                                     priority = 0;
         };
 
+        OrderBook();
         void addOrder(const Msg &order);
 
         //Create a Function that returns PRICE LVL of ASK(LVL2)
@@ -53,7 +49,6 @@ class OrderBook
     alignas(64) std::map<uint32_t, uint32_t>                                    out_of_band_asks;
     alignas(64) std::map<uint32_t, uint32_t, std::greater<int>>                 out_of_band_bids;
     alignas(64) TopOfTheBook                                                    top_of_the_book_;
+    alignas(64) std::unordered_map<uint64_t, Order>                             orders_ids;
 
 };
-
-#endif 

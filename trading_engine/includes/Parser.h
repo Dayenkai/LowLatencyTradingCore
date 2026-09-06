@@ -47,7 +47,7 @@ struct  Parser
         std::string     line("");
 
         buffer = "";
-        buffer.reserve(BUFFER_SIZE);
+        buffer.reserve(trading_engine::BUFFER_SIZE);
         while (std::getline(streamBuffer, line))
         {
             if (line.length() > PACKET_LENGTH)

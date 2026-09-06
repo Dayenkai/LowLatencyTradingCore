@@ -10,32 +10,39 @@ class   MatchingEngine
     public:
     MatchingEngine() = default;
 
-    void    handleOrder(const Msg &order)
+    void    handleOrder(std::atomic<Msg> &order)
     {
-        switch(static_cast<uint32_t>(order._event_type))
+        while (true)
         {
-            case static_cast<uint32_t>(Order_Type::ADD) :
-            book.addOrder(order);
-            break;
+            Msg new_msg = order.load();
+            if (new_msg.valid)
+            {
+                switch(static_cast<uint32_t>(new_msg._event_type))
+                {
+                    case static_cast<uint32_t>(Order_Type::ADD) :
+                    book.addOrder(order);
+                    break;
 
-            case static_cast<uint32_t>(Order_Type::UPDATE) :
-            break;
+                    case static_cast<uint32_t>(Order_Type::UPDATE) :
+                    break;
 
-            case static_cast<uint32_t>(Order_Type::CANCEL) :
-            book.cancelOrder(order);
-            break;
+                    case static_cast<uint32_t>(Order_Type::CANCEL) :
+                    book.cancelOrder(order);
+                    break;
 
-        }
-        
+                }
+                
 
-        //Check Matching
-        OrderBook::TopOfTheBook   &top_of_the_book = book.topOfTheBook();
-        std::cout << "Before matching condition : " << "Best Ask [" << top_of_the_book.best_ask << ", " << top_of_the_book.best_ask_qty << "]" << std::endl;
-        std::cout << "Best Bid [" << top_of_the_book.best_bid << ", " << top_of_the_book.best_bid_qty << "]" << std::endl;  
-        while (top_of_the_book.best_bid >= top_of_the_book.best_ask && top_of_the_book.best_ask_qty > 0 && top_of_the_book.best_bid_qty > 0)
-        {
-            std::cout << "MATCHING between ask[" << top_of_the_book.best_ask << "," << top_of_the_book.best_ask_qty << "] and bid [" << top_of_the_book.best_bid << "," << top_of_the_book.best_bid_qty << "]" << std::endl;
-            book.matchingUpdate();
+                //Check Matching
+                OrderBook::TopOfTheBook   &top_of_the_book = book.topOfTheBook();
+                std::cout << "Before matching condition : " << "Best Ask [" << top_of_the_book.best_ask << ", " << top_of_the_book.best_ask_qty << "]" << std::endl;
+                std::cout << "Best Bid [" << top_of_the_book.best_bid << ", " << top_of_the_book.best_bid_qty << "]" << std::endl;  
+                while (top_of_the_book.best_bid >= top_of_the_book.best_ask && top_of_the_book.best_ask_qty > 0 && top_of_the_book.best_bid_qty > 0)
+                {
+                    std::cout << "MATCHING between ask[" << top_of_the_book.best_ask << "," << top_of_the_book.best_ask_qty << "] and bid [" << top_of_the_book.best_bid << "," << top_of_the_book.best_bid_qty << "]" << std::endl;
+                    book.matchingUpdate();
+                }
+            }
         }
         
     }
@@ -49,12 +56,5 @@ class   MatchingEngine
     OrderBook   book;
     //Can includes Parameters for the Matchnig Engine
 };
-
-
-
-
-
-
-
 
 #endif

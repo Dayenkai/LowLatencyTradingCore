@@ -6,18 +6,18 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(trading_engine trading_engine/src/main.cc trading_engine/src/EnvStartup/envStartup.cc trading_engine/src/NIC/nicReplay.cc trading_engine/src/PersonnalLibrary/OutputFunctions.cc trading_engine/src/FeedHandler/feedHandler.cc trading_engine/src/Utils/utils.cpp)
-add_executable(exchange_engine exchange_engine/src/main.cc exchange_engine/src/Exchange.cc)
+add_executable(trading_engine trading_engine/src/main.cc trading_engine/src/NIC/nicReplay.cc trading_engine/src/PersonnalLibrary/OutputFunctions.cc trading_engine/src/FeedHandler/feedHandler.cc trading_engine/src/OrderEntryGateway/OrderEntryGateway.cc trading_engine/src/startTradingEngine.cc trading_engine/src/Trading_Engine/trading_engine.cc trading_engine/src/Utils/utils.cpp)
+add_executable(exchange_engine exchange_engine/src/main.cc exchange_engine/src/setup.cc exchange_engine/src/MarketDataPublisher.cc exchange_engine/src/OrderBook.cc exchange_engine/src/OrderEntryGateway.cc ${CMAKE_CURRENT_SOURCE_DIR}/trading_engine/includes/CppStandard.h)
 add_executable(benchmark_tool benchmark/src/main.cc)
 
 add_library(orderbook trading_engine/src/OrderBook/orderBook.cc)
 
 target_include_directories(orderbook PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/trading_engine/includes)
 target_include_directories(trading_engine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/trading_engine/includes)
-target_include_directories(exchange_engine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/exchange_engine/includes PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/trading_engine/includes)
+target_include_directories(exchange_engine PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/exchange_engine/includes)
 target_include_directories(benchmark_tool PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/benchmark/includes)
 
-target_link_libraries(trading_engine PRIVATE orderbook)
+target_link_libraries(trading_engine PRIVATE orderbook atomic)
 target_link_libraries(exchange_engine PRIVATE orderbook)
 
 find_package(nlohmann_json QUIET)

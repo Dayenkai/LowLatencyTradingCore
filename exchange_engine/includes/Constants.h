@@ -1,8 +1,20 @@
-#ifndef CONSTANTS_H
-#define CONSTANTS_H
+#ifndef _CONSTANTS_H
+#define _CONSTANTS_H
+
+#include "CppStandard.h"
+
+namespace ExchangeInetConst
+{
+    constexpr int TX_RING_SIZE  =       1024;
+    constexpr int RX_RING_SIZE  =       1024;
+}
 
 
-namespace   trading_engine
+
+using   vector_golden_byte = std::vector<std::byte>;
+
+
+namespace   exchange_engine
 {
     constexpr int  BUFFER_SIZE                = 4096;
     constexpr int  RX_RING_SIZE               = 1024;
@@ -86,4 +98,4 @@ std::array<size_t, 8>                          dataOffsets{{{0},//SeqId
 
 static_assert(CHAR_BIT == 8);
 
-#endif 
+#endif

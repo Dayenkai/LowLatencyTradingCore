@@ -1,14 +1,13 @@
 #include "OrderBook.h"
-#include "Constants.h"
 
 OrderBook::OrderBook()
 {
-    bid_orders.resize(trading_engine::BAND_SIZE);
-    ask_orders.resize(trading_engine::BAND_SIZE);
-    bitmapBids.resize(trading_engine::BITMAP_SIZE);
-    bitmapAsks.resize(trading_engine::BITMAP_SIZE);
+    bid_orders.resize(exchange_engine::BAND_SIZE);
+    ask_orders.resize(exchange_engine::BAND_SIZE);
+    bitmapBids.resize(exchange_engine::BITMAP_SIZE);
+    bitmapAsks.resize(exchange_engine::BITMAP_SIZE);
 
-    //price_lvl_order_ids.resize(trading_engine::BAND_SIZE);
+    //price_lvl_order_ids.resize(exchange_engine::BAND_SIZE);
 
     top_of_the_book_.best_ask = UINT32_MAX;
     top_of_the_book_.best_ask_qty = 0;
@@ -25,18 +24,18 @@ void OrderBook::addOrder(const Msg &order)
     {
         if (static_cast<Side>(order._side) == Side::Buy)
         {
-            if (order.price_ <= trading_engine::BASE_BUYING_TICK)
+            if (order.price_ <= exchange_engine::BASE_BUYING_TICK)
             {
-                bid_orders[trading_engine::BASE_BUYING_TICK - order.price_] += order.qty_;
-                bitmapBids[(trading_engine::BASE_BUYING_TICK - order.price_)/64] |= 1ULL << (trading_engine::BASE_BUYING_TICK - order.price_)%64;
+                bid_orders[exchange_engine::BASE_BUYING_TICK - order.price_] += order.qty_;
+                bitmapBids[(exchange_engine::BASE_BUYING_TICK - order.price_)/64] |= 1ULL << (exchange_engine::BASE_BUYING_TICK - order.price_)%64;
 
                 if (order.price_ >= top_of_the_book_.best_bid)
                 {                        
                     //If Orders cancelled, Find Next Best Bid Ask
                     
-                    std::cout << "New Best Bid[" << order.price_ <<"," << bid_orders[trading_engine::BASE_BUYING_TICK - order.price_] << "]" <<  std::endl;
-                    top_of_the_book_.best_bid = order.price_;//*-1+trading_engine::BASE_BUYING_TICK
-                    top_of_the_book_.best_bid_qty = bid_orders[trading_engine::BASE_BUYING_TICK - order.price_];
+                    std::cout << "New Best Bid[" << order.price_ <<"," << bid_orders[exchange_engine::BASE_BUYING_TICK - order.price_] << "]" <<  std::endl;
+                    top_of_the_book_.best_bid = order.price_;//*-1+exchange_engine::BASE_BUYING_TICK
+                    top_of_the_book_.best_bid_qty = bid_orders[exchange_engine::BASE_BUYING_TICK - order.price_];
                     top_of_the_book_.bid_out_of_band = false;
                 }
                 return;
@@ -51,16 +50,16 @@ void OrderBook::addOrder(const Msg &order)
         }
         else
         {
-            if (order.price_ >= trading_engine::BASE_SELLING_TICK && order.price_ <= trading_engine::BAND_SIZE-1)
+            if (order.price_ >= exchange_engine::BASE_SELLING_TICK && order.price_ <= exchange_engine::BAND_SIZE-1)
             {
-                ask_orders[order.price_ - trading_engine::BASE_SELLING_TICK] += order.qty_;
-                bitmapAsks[(order.price_ - trading_engine::BASE_SELLING_TICK)/64] |= 1ULL << (order.price_ - trading_engine::BASE_SELLING_TICK)%64;
+                ask_orders[order.price_ - exchange_engine::BASE_SELLING_TICK] += order.qty_;
+                bitmapAsks[(order.price_ - exchange_engine::BASE_SELLING_TICK)/64] |= 1ULL << (order.price_ - exchange_engine::BASE_SELLING_TICK)%64;
                 //If first Ask entering the OrderBook, or ask being inferior to the best Ask
                 if (order.price_ <= top_of_the_book_.best_ask)
                 {
-                    std::cout << "New Best Ask[" << order.price_ <<"," << ask_orders[order.price_ - trading_engine::BASE_SELLING_TICK] << "]" <<  std::endl;
-                    top_of_the_book_.best_ask = order.price_;//+trading_engine::BASE_SELLING_TICK
-                    top_of_the_book_.best_ask_qty = ask_orders[order.price_ - trading_engine::BASE_SELLING_TICK];
+                    std::cout << "New Best Ask[" << order.price_ <<"," << ask_orders[order.price_ - exchange_engine::BASE_SELLING_TICK] << "]" <<  std::endl;
+                    top_of_the_book_.best_ask = order.price_;//+exchange_engine::BASE_SELLING_TICK
+                    top_of_the_book_.best_ask_qty = ask_orders[order.price_ - exchange_engine::BASE_SELLING_TICK];
                     top_of_the_book_.ask_out_of_band = false;
                 }
                 return;
@@ -69,7 +68,7 @@ void OrderBook::addOrder(const Msg &order)
             out_of_band_asks[order.price_] += order.qty_;
             if (order.price_ <= top_of_the_book_.best_ask)
             {
-                top_of_the_book_.best_ask = order.price_;//+trading_engine::BASE_SELLING_TICK
+                top_of_the_book_.best_ask = order.price_;//+exchange_engine::BASE_SELLING_TICK
                 top_of_the_book_.best_ask_qty = out_of_band_asks[order.price_];
                 top_of_the_book_.ask_out_of_band = true;
                 
@@ -91,30 +90,30 @@ void    OrderBook::findTopOfTheBook(const Side& side, const std::vector<uint64_t
         if (bitmap[i] != 0)
         {
             uint64_t highestpos = __builtin_ctzll(bitmap[i]);
-            std::cout << "New Top Of the Book found in normal range ! Best " << (side == Side::Sell ? "Ask" : "Bid") << " is " << (side == Side::Sell ? (i*64+highestpos) + trading_engine::BASE_SELLING_TICK : trading_engine::BASE_BUYING_TICK - (i*64+highestpos) )  << std::endl;
+            std::cout << "New Top Of the Book found in normal range ! Best " << (side == Side::Sell ? "Ask" : "Bid") << " is " << (side == Side::Sell ? (i*64+highestpos) + exchange_engine::BASE_SELLING_TICK : exchange_engine::BASE_BUYING_TICK - (i*64+highestpos) )  << std::endl;
             if (side == Side::Sell)
             {
-                if (!out_of_band_asks.empty() && out_of_band_asks.begin()->first < i*64+highestpos + trading_engine::BASE_SELLING_TICK) [[unlikely]]
+                if (!out_of_band_asks.empty() && out_of_band_asks.begin()->first < i*64+highestpos + exchange_engine::BASE_SELLING_TICK) [[unlikely]]
                 {
                     top_of_the_book_.best_ask = out_of_band_asks.begin()->first;
                     top_of_the_book_.best_ask_qty = out_of_band_asks.begin()->second;
                     top_of_the_book_.ask_out_of_band = true;
                     return;
                 }
-                top_of_the_book_.best_ask = i*64+highestpos + trading_engine::BASE_SELLING_TICK;
+                top_of_the_book_.best_ask = i*64+highestpos + exchange_engine::BASE_SELLING_TICK;
                 top_of_the_book_.best_ask_qty = ask_orders[i*64+highestpos];
                 top_of_the_book_.ask_out_of_band = false;
             }
             else
             {
-                if (!out_of_band_bids.empty() && out_of_band_bids.begin()->first > trading_engine::BASE_BUYING_TICK - i*64+highestpos) [[unlikely]]
+                if (!out_of_band_bids.empty() && out_of_band_bids.begin()->first > exchange_engine::BASE_BUYING_TICK - i*64+highestpos) [[unlikely]]
                 {
                     top_of_the_book_.best_bid = out_of_band_bids.begin()->first;
                     top_of_the_book_.best_bid_qty = out_of_band_bids.begin()->second;
                     top_of_the_book_.ask_out_of_band = true;
                     return;
                 }
-                top_of_the_book_.best_bid = trading_engine::BASE_BUYING_TICK - i*64+highestpos;
+                top_of_the_book_.best_bid = exchange_engine::BASE_BUYING_TICK - i*64+highestpos;
                 top_of_the_book_.best_bid_qty = bid_orders[i*64+highestpos];
                 top_of_the_book_.ask_out_of_band = false;
             }
@@ -153,8 +152,8 @@ void    OrderBook::ListOrder(const Side &side)
 {
     auto listOrders = [&](std::vector<uint32_t>& lvlPrices)
     {
-        auto bbt = static_cast<uint64_t>(trading_engine::BASE_BUYING_TICK);
-        auto bst = static_cast<uint64_t>(trading_engine::BASE_SELLING_TICK);
+        auto bbt = static_cast<uint64_t>(exchange_engine::BASE_BUYING_TICK);
+        auto bst = static_cast<uint64_t>(exchange_engine::BASE_SELLING_TICK);
         double orderprice_ = 0.0f;
         auto itOOBB = out_of_band_bids.begin();
         auto itOOBA = out_of_band_asks.begin();
@@ -253,21 +252,21 @@ void                    OrderBook::matchingUpdate()
     if (top_of_the_book_.ask_out_of_band == false)
     {
         hasBeenOutOfBandAsks = false;
-        ask_orders[top_of_the_book_.best_ask - trading_engine::BASE_SELLING_TICK] -= minQty;
+        ask_orders[top_of_the_book_.best_ask - exchange_engine::BASE_SELLING_TICK] -= minQty;
         if (top_of_the_book_.best_ask_qty == 0)
         {
-            bitmapAsks[(top_of_the_book_.best_ask - trading_engine::BASE_SELLING_TICK)/64] &= ~(1ULL << (top_of_the_book_.best_ask - trading_engine::BASE_SELLING_TICK) % 64);
-            findTopOfTheBook(Side::Sell, bitmapAsks, (top_of_the_book_.best_ask - trading_engine::BASE_SELLING_TICK)/64);
+            bitmapAsks[(top_of_the_book_.best_ask - exchange_engine::BASE_SELLING_TICK)/64] &= ~(1ULL << (top_of_the_book_.best_ask - exchange_engine::BASE_SELLING_TICK) % 64);
+            findTopOfTheBook(Side::Sell, bitmapAsks, (top_of_the_book_.best_ask - exchange_engine::BASE_SELLING_TICK)/64);
         }
     }
     if (top_of_the_book_.bid_out_of_band == false)
     {
         hasBeenOutOfBandBids = false;
-        bid_orders[trading_engine::BASE_BUYING_TICK - top_of_the_book_.best_bid] -= minQty;
+        bid_orders[exchange_engine::BASE_BUYING_TICK - top_of_the_book_.best_bid] -= minQty;
         if (top_of_the_book_.best_bid_qty == 0)
         {
-            bitmapBids[(trading_engine::BASE_BUYING_TICK - top_of_the_book_.best_bid)/64] &= ~(1ULL << (trading_engine::BASE_BUYING_TICK - top_of_the_book_.best_bid) % 64);
-            findTopOfTheBook(Side::Buy, bitmapBids, (trading_engine::BASE_BUYING_TICK - top_of_the_book_.best_bid)/64);
+            bitmapBids[(exchange_engine::BASE_BUYING_TICK - top_of_the_book_.best_bid)/64] &= ~(1ULL << (exchange_engine::BASE_BUYING_TICK - top_of_the_book_.best_bid) % 64);
+            findTopOfTheBook(Side::Buy, bitmapBids, (exchange_engine::BASE_BUYING_TICK - top_of_the_book_.best_bid)/64);
         }
     }
 

@@ -44,7 +44,6 @@ typedef struct alignas(64) Msg
     uint8_t                  _kind;
     uint8_t                  _event_type;
     uint8_t                  _side;
-    bool                     valid;
 }Msg;
 
 typedef struct alignas(64) Order
@@ -68,10 +67,10 @@ typedef struct alignas(64) Order
 typedef struct alignas(64) MemoryPool
 {
     public:
-    RxRingBuffer<RxDesc, trading_engine::RX_RING_SIZE>                    rxRingDesc;
-    FeedPacketHeader                                      packetHeader;
-    Msg                                                   msg;
-    uint8_t                                               arena[trading_engine::PACKET_NB][trading_engine::BUFFER_SIZE];
+    RxRingBuffer<RxDesc, exchange_engine::RX_RING_SIZE>                    rxRingDesc;
+    FeedPacketHeader                                                       packetHeader;
+    Msg                                                                    msg;
+    uint8_t                                                                arena[exchange_engine::PACKET_NB][exchange_engine::BUFFER_SIZE];
 }MemoryPool;
 
 #endif
