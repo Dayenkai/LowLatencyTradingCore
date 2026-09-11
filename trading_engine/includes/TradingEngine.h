@@ -4,6 +4,7 @@
 #include "FeedHandler.h"
 #include "MatchingEngine.h"
 #include "OrderBook.h"
+#include "OrderEntryGateway.h"
 
 
 int startTradingEngine(int argc, char **argv);
@@ -32,10 +33,11 @@ class   TradingEngine
 
 
     protected :
-    OrderBook             order_book_;
-    FeedHandler           feed_handler_;
-    std::atomic<Msg>      msg_buffer_;
-    MatchingEngine        matching_engine_;
+    alignas(64) OrderBook             order_book_;
+    alignas(64) FeedHandler           feed_handler_;
+    alignas(64) std::atomic<Msg>      msg_buffer_;
+    alignas(64) MatchingEngine        matching_engine_;
+    alignas(64) OrderEntryGateway     order_entry_gateway_;
 
 };
 
@@ -88,37 +90,35 @@ class   TradingEngineReplay : public TradingEngine
     {
         if (!channels.empty()) [[likely]]
         {
+            //THIS PART IS RESERVED FOR SCENARIOS
+            //Set up Market Data Pipeline
+            /*Set Up Feed Handler*/
+            dataProcessorsVector.reserve(thread_Idx);
+            std::vector<MemoryPool>   memoryPoolvec(thread_Idx);
+            uint8_t                   size = thread_Idx;
+            std::vector<uint32_t>     coreIds{1,2,3};
+            
+            
+            for (thread_Idx = 0; thread_Idx < size; thread_Idx++)
+            {
+                FeedHandler               feedHandler(coreIds[thread_Idx]);    
+                dataProcessorsVector.emplace_back(std::jthread(&FeedHandler::run, feedHandler, std::ref(memoryPoolvec[thread_Idx]), std::ref(msg_buffer_)));
+            }
 
-            //std::jthread    order_gateThread(&OrderEntryGateway::Listen, order_entry_gateway.get());
+            uint32_t        nicCoreId = 0;
+            std::jthread    MarketDataReceiverThread(MarketDataReceiver, std::ref(channels), std::ref(memoryPoolvec), std::ref(nicCoreId));
+            MarketDataReceiverThread.join();
+            for (thread_Idx = 0; thread_Idx < size; thread_Idx++)
+            {
+                dataProcessorsVector[thread_Idx].join();
+            }
+
+            std::jthread    matching_engine_thread(&MatchingEngine::handleOrder, &matching_engine_, std::ref(msg_buffer_));
+            matching_engine_thread.join();
             return 0;
         }
 
-
-        //THIS PART IS RESERVED FOR SCENARIOS
-        //Set up Market Data Pipeline
-        /*Set Up Feed Handler*/
-        dataProcessorsVector.reserve(thread_Idx);
-        std::vector<MemoryPool>   memoryPoolvec(thread_Idx);
-        uint8_t                   size = thread_Idx;
-        std::vector<uint32_t>     coreIds{1,2,3};
-        
-        
-        for (thread_Idx = 0; thread_Idx < size; thread_Idx++)
-        {
-            FeedHandler               feedHandler(coreIds[thread_Idx]);    
-            dataProcessorsVector.emplace_back(std::jthread(&FeedHandler::run, feedHandler, std::ref(memoryPoolvec[thread_Idx]), std::ref(msg_buffer_)));
-        }
-
-        uint32_t        nicCoreId = 0;
-        std::jthread    nicReplayThread(NicReplay, std::ref(channels), std::ref(memoryPoolvec), std::ref(nicCoreId));
-        nicReplayThread.join();
-        for (thread_Idx = 0; thread_Idx < size; thread_Idx++)
-        {
-            dataProcessorsVector[thread_Idx].join();
-        }
-
-        std::jthread    matching_engine_thread(&MatchingEngine::handleOrder, &matching_engine_, std::ref(msg_buffer_));
-        matching_engine_thread.join();
+        return 0;
     }
 
     private:
@@ -134,9 +134,19 @@ class   TradingEngineLive : public TradingEngine
     
     int     run()
     {
+        std::cout << "Supreme Runner Trading Engine is running !" << std::endl;
+
+        //Listening to UDP Market Data
+        std::jthread    listen_mkt_data(&OrderEntryGateway::ListenMarketDataUDP, &order_entry_gateway_);
+        //Listening to TCP Order Feedback
+        std::jthread    listen_feedback_order(&OrderEntryGateway::ListenOrderFeedbackTCP, &order_entry_gateway_);
+
+        //Sending TCP Orders
+        std::jthread    send_order(&OrderEntryGateway::SendOrderTCP, &order_entry_gateway_);
         //TradingEngine::run();
         return 0;
     };
+
 };
 
 #endif

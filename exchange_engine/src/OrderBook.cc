@@ -22,7 +22,7 @@ void OrderBook::addOrder(const Msg &order)
 {
     if (order.price_ > 0 && order.qty_ > 0)
     {
-        if (static_cast<Side>(order._side) == Side::Buy)
+        if (static_cast<Side>(order.side_) == Side::Buy)
         {
             if (order.price_ <= exchange_engine::BASE_BUYING_TICK)
             {

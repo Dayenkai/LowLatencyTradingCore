@@ -25,7 +25,7 @@ struct RxRingBuffer
 {
     std::atomic<uint64_t>               head = 0;
     std::atomic<uint64_t>               tail = 0;
-    std::array<T, capacity>             data;
+    uint8_t                             *data;
 };
 
 typedef struct alignas(64) FeedPacketHeader
@@ -37,13 +37,56 @@ typedef struct alignas(64) FeedPacketHeader
 
 typedef struct alignas(64) Msg
 {
-    uint32_t                 _id;
-    uint32_t                 _instr;
+    uint32_t                 id_;
+    uint32_t                 instr_;
     uint32_t                 price_;
     uint32_t                 qty_;
-    uint8_t                  _kind;
-    uint8_t                  _event_type;
-    uint8_t                  _side;
+    uint8_t                  kind_;
+    uint8_t                  event_type_;
+    uint8_t                  side_;
+
+    Msg        &setId(uint32_t id)
+    {
+        id_ = id;
+        return *this;
+    }
+
+    Msg        &setInstr(uint32_t instr)
+    {
+        instr_ = instr;
+        return *this;
+    }
+
+    Msg        &setPrice(uint32_t price)
+    {
+        price_ = price;
+        return *this;
+    }
+
+    Msg        &setQty(uint32_t qty)
+    {
+        qty_ = qty;
+        return *this;
+    }
+
+    Msg        &setKind(uint8_t kind)
+    {
+        kind_ = kind;
+        return *this;
+    }
+
+    Msg        &setEventType(uint8_t event_type)
+    {
+        event_type_ = event_type;
+        return *this;
+    }
+
+    Msg        &setSide(uint8_t side)
+    {
+        side_ = side;
+        return *this;
+    }
+
 }Msg;
 
 typedef struct alignas(64) Order
@@ -67,7 +110,6 @@ typedef struct alignas(64) Order
 typedef struct alignas(64) MemoryPool
 {
     public:
-    RxRingBuffer<RxDesc, exchange_engine::RX_RING_SIZE>                    rxRingDesc;
     FeedPacketHeader                                                       packetHeader;
     Msg                                                                    msg;
     uint8_t                                                                arena[exchange_engine::PACKET_NB][exchange_engine::BUFFER_SIZE];

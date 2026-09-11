@@ -3,7 +3,7 @@
 
 #include "MemoryPool.h"
 #include "CppStandard.h"
-#include "NicReplay.h"
+#include "MarketDataReceiver.h"
 #include "MatchingEngine.h"
 
 

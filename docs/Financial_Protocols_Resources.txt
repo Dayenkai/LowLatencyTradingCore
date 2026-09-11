@@ -1,0 +1,223 @@
+OUTCH 5.0
+
+O  Enter Order
+U  Replace Order Request
+X  Cancel Order Request
+M  Modify Order Request
+C  Mass Cancel Request
+D  Disable Order Entry
+E  Enable Order Entry
+Q  Account Query
+
+
+Core IMPL :
+CLIENT → EXCHANGE
+
+O  Enter Order
+X  Cancel Order
+U  Replace Order
+
+
+EXCHANGE → CLIENT
+
+A  Accepted
+J  Rejected
+E  Executed
+C  Canceled
+U  Replaced
+
+
+LifeCycle:
+
+     O Enter
+Trading ─────────────► Exchange
+                           │
+          A Accepted       │
+Trading ◄──────────────────┘
+
+          E Executed
+Trading ◄──────────────── Exchange
+
+or
+
+          X Cancel
+Trading ────────────────► Exchange
+
+          C Canceled
+Trading ◄──────────────── Exchange
+
+
+Enter Order :
+
+Type 'O' ->
+struct EnterOrder {
+    char type;              // 'O'
+    uint32_t userRefNum;
+    char side;
+    uint32_t quantity;
+    char symbol[8];
+    uint64_t price;
+    char timeInForce;
+    char display;
+    char capacity;
+    char intermarketSweep;
+    char crossType;
+    char clOrdId[14];
+    uint16_t appendageLength;
+};
+
+Simplification :
+
+struct EnterOrder {
+    uint32_t clientOrderId;
+    uint32_t instrumentId;
+    Side side;
+    uint32_t quantity;
+    int64_t price;
+};
+
+
+Type 'A' ->
+struct OrderAccepted {
+    uint64_t timestamp;
+    uint32_t clientOrderId;
+    uint64_t exchangeOrderId;
+    uint32_t quantity;
+    int64_t price;
+    OrderState state;
+};
+
+
+Type 'J' ->
+struct OrderRejected {
+    uint64_t timestamp;
+    uint32_t clientOrderId;
+    RejectReason reason;
+};
+
+
+The reason could be :
+enum class RejectReason : uint8_t {
+    InvalidPrice,
+    InvalidQuantity,
+    UnknownInstrument,
+    DuplicateOrderId,
+    RiskRejected,
+    MarketClosed
+};
+
+
+
+Type 'E' ->
+struct OrderExecuted {
+    uint64_t timestamp;
+    uint32_t clientOrderId;
+    uint64_t exchangeOrderId;
+
+    uint32_t executedQuantity;
+    int64_t executionPrice;
+
+    uint64_t matchId;
+};
+
+
+ITCH Protocol:
+
+Type	Meaning	Your internal event
+R	Stock Directory	InstrumentDefinition
+A	Add Order	OrderAdded
+E	Order Executed	OrderExecuted
+X	Order Cancel	OrderReduced
+D	Order Delete	OrderDeleted
+U	Order Replace	OrderReplaced
+S	System Event	SessionEvent
+
+
+
+
+R Message :
+R
+stock_locate = 1234
+stock        = "AAPL"
+...
+
+Your trading side:
+instruments[1234] = ...;
+
+
+
+'A', Add Order :
+struct AddOrder {
+    StockLocate stock;
+    OrderId orderId;
+    Side side;
+    Quantity qty;
+    Price price;
+};
+
+
+'E', Order Executed :
+E
+order_ref     = 90001
+executed_qty  = 40
+
+
+'X', Order Cancelled :
+order_ref     = 90001
+cancelled_qty = 20
+
+
+
+'D', Order Delete :
+order_ref = 90001
+
+
+'R', Replace Order :
+replace order 90001
+with new order 90002
+new quantity = 200
+new price    = 1873000
+
+'S', System Message :
+Start of messages
+Start of system hours
+Start of market hours
+End of market hours
+End of system hours
+End of messages
+
+
+
+
+
+
+
+
+
+Then add these in phase 2 for ITCH :
+
+Once the core book works:
+
+F -> Add Order with MPID Attribution
+C -> Order Executed With Price
+P -> Trade
+Q -> Cross Trade
+B -> Broken Trade
+H -> Stock Trading Action
+
+Why?
+
+F is basically an A plus market-participant attribution.
+
+C covers executions where the execution price must explicitly be published.
+
+P represents certain trades that aren't represented as executions against visible displayed orders.
+
+Q is a Nasdaq cross trade.
+
+B busts/breaks a previously reported trade.
+
+H tells you things like:
+
+AAPL HALTED
+AAPL TRADING

@@ -1,7 +1,11 @@
+#ifndef ORDER_ENTRY_GATEWAY_
+#define ORDER_ENTRY_GATEWAY_
+
 #include <arpa/inet.h>
 #include <iostream>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <atomic>
 
 class   OrderEntryGateway
 {
@@ -9,13 +13,14 @@ class   OrderEntryGateway
     public:
     OrderEntryGateway()
     {
-        seq = 0;//Initializing Sequence Assignment
+        client_fd_ = -1;//Initializing Sequence Assignment
     }
     void    AssignSequence();
 
-    int    Listen();
+    int    ListenMarketDataUDP();
+    int    ListenOrderFeedbackTCP();
 
-    int     SendOrder();
+    int     SendOrderTCP();
     // bool    Parse(std::array<T, capacity>             data)
     // {
     //     inline void    parse(RxDesc &desc, Msg &msg)
@@ -31,5 +36,8 @@ class   OrderEntryGateway
     // }
 
     private:
-    static  uint64_t seq;
+    static  uint64_t              seq;
+    std::atomic<int>              client_fd_;
 };
+
+#endif

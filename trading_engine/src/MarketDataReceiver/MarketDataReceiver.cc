@@ -1,12 +1,12 @@
 #include "../../includes/CppStandard.h"
 #include "../../includes/PersonnalLibrary.h"
-#include "../../includes/NicReplay.h"
+#include "../../includes/MarketDataReceiver.h"
 #include "../../includes/MemoryPool.h"
 #include "../../includes/Utils.h"
 
 
 //MUST CHANGE THE API OF NIC REPLAY : NOT ALL FIELDS WILL LOOK ALIKE. FOR EXAMPLE? CANCEL DONT NEED PRICES. ONLY ID AND QTY.
-int     NicReplay(std::vector<Channel>   &channels, std::vector<MemoryPool> &memoryPool, uint32_t &coreId)
+int     MarketDataReceiver(std::vector<Channel>   &channels, std::vector<MemoryPool> &memoryPool, uint32_t &coreId)
 {
     pthread_t   current_thread = pthread_self();
     pinThreadToCore(current_thread, coreId);

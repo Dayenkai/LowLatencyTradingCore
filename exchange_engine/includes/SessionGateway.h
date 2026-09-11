@@ -1,19 +1,37 @@
+#ifndef  ORDER_ENTRY_GATEWAY_H
+#define  ORDER_ENTRY_GATEWAY_H
+
+#include "MemoryPool.h"
+
 #include <arpa/inet.h>
 #include <iostream>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <cstring>
+#include <atomic>
+#include <thread>
 
-class   OrderEntryGateway
+class   Session
+{
+    uint64_t    client_id;
+    uint64_t    msg_seq;
+};
+
+class   SessionGateway
 {
 
     public:
-    OrderEntryGateway()
+    SessionGateway()
     {
-        seq = 0;//Initializing Sequence Assignment
+        client_fd_ = -1;//Initializing Sequence Assignment
     }
     void    AssignSequence();
 
-    int    Listen();
+    int     ListenOrderEntryTCP(RxRingBuffer<RxDesc, ExchangeInetConst::TX_RING_SIZE> &order_entry_command_ring, MemoryPool *memory_pool);
+    int     SendOrderEntryFeedbackTCP();
+    int     SendMarketDataUDP();
+    int     SendOrderFeedbackTCP();
+
 
     int     SendOrder();
     // bool    Parse(std::array<T, capacity>             data)
@@ -31,5 +49,10 @@ class   OrderEntryGateway
     // }
 
     private:
-    static  uint64_t seq;
+    static  uint64_t                        seq;
+    std::atomic<int>                        client_fd_;
+    std::unordered_map<uint64_t, uint16_t>  users_info;//Client_id<->tcp_socket_fd
+    
 };
+
+#endif

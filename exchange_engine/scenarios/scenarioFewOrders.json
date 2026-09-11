@@ -9,7 +9,10 @@
         "quantity": 100,
         "side": "BUY",
         "kind" : "GTC",
-        "type": "NEW"
+        "type": "NEW",
+        "client_id" : 10,
+        "instrument_id" : 
+        "msg_type" : "O"
       },
       {
         "timestamp": 1100,
@@ -17,8 +20,8 @@
         "price": 10000,
         "quantity": 40,
         "side": "SELL",
-        "kind" : "GTC",
-        "type": "NEW"
+        "type": "NEW",
+        "client_id" : 10
       },
       {
         "timestamp": 1200,

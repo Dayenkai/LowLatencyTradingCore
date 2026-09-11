@@ -189,15 +189,15 @@ class   ExchangeScenario : public Exchange
                 AddOrder order = orders[i].get<AddOrder>();
                 orderBook_.addOrder(Msg());
                 typedef struct alignas(64) Msg
-{
-    uint32_t                 _id;
-    uint32_t                 _instr;
-    uint32_t                 price_;
-    uint32_t                 qty_;
-    uint8_t                  _kind;
-    uint8_t                  _event_type;
-    uint8_t                  _side;
-}Msg;
+                {
+                    uint32_t                 _id;
+                    uint32_t                 _instr;
+                    uint32_t                 price_;
+                    uint32_t                 qty_;
+                    uint8_t                  _kind;
+                    uint8_t                  _event_type;
+                    uint8_t                  _side;
+                }Msg;
             }
             if (orders[i]["type"] == "DELETE")
             {
@@ -231,6 +231,7 @@ class   ExchangeRandom : public Exchange
     }
     int     run()
     {
+        std::cout << "KSE - [Kinshasa Stock Exchange Running !]" << std::endl;
         Exchange::run();
         return 0;
     };

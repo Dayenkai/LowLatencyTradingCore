@@ -4,7 +4,6 @@
 #include "CppStandard.h"
 #include "MemoryPool.h"
 #include "PersonnalLibrary.h"
-#include "NicReplay.h"
 #include "Constants.h"
 
 typedef struct Channel
@@ -64,7 +63,7 @@ typedef struct Channel
     uint8_t                _number;
 }Channel;
 
-int     NicReplay(std::vector<Channel>  &channelFiles, std::vector<MemoryPool> &pool, uint32_t &coreId);
+int     MarketDataReceiver(std::vector<Channel>  &channelFiles, std::vector<MemoryPool> &pool, uint32_t &coreId);
 
 
 #endif
