@@ -74,6 +74,7 @@ struct EnterOrder {
     Side side;
     uint32_t quantity;
     int64_t price;
+    TimeInfForce    tif;
 };
 
 

@@ -3,9 +3,11 @@
 
 #include "CppStandard.h"
 #include "Constants.h"
+#include "Order.h"
 #include <cstdint>
 #include <cstddef>
 #include <atomic>
+#include <variant>
 
 template<typename T>
 void byteEncoder(uint64_t value, std::vector<T>& dest);
@@ -17,15 +19,20 @@ typedef struct alignas(64) RxDesc
     uint32_t                len;
     uint16_t                flags;
     uint8_t                 padding;
-    uint8_t                 *addr;
+    uint8_t                 addr;
 }RxDesc;
 
-template<typename T, size_t capacity>
-struct RxRingBuffer
+enum class  OrderType : uint8_t
 {
-    std::atomic<uint64_t>               head = 0;
-    std::atomic<uint64_t>               tail = 0;
-    uint8_t                             *data;
+    AddOrder = 1
+};
+
+template <size_t capacity, typename... Types>
+struct alignas(64) RxRingBuffer
+{
+    std::atomic<uint64_t>                           head = 0;
+    std::atomic<uint64_t>                           tail = 0;
+    std::array<std::variant<Types...>, capacity>    command_content;
 };
 
 typedef struct alignas(64) FeedPacketHeader

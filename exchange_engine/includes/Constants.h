@@ -26,7 +26,12 @@ namespace   exchange_engine
     constexpr int  BAND_SIZE                   = 10960000;       
     constexpr int  BITMAP_SIZE           =      171250;     
     constexpr int  BASE_SELLING_TICK       = 10000;    
-    constexpr int  BASE_BUYING_TICK      = 3000000;      
+    constexpr int  BASE_BUYING_TICK      = 3000000;
+    
+    enum class TimeInForce : uint8_t
+    {
+        GTC = 0
+    };
 }
 //MEMORY LAYOUT
 
@@ -39,7 +44,7 @@ enum class Order_Type : uint8_t
     ADD = 0, UPDATE = 1, CANCEL = 2
 };
 
-enum class Side : bool
+enum class Side : uint8_t
 {
     Buy = false, Sell = true
 };

@@ -8,19 +8,12 @@
 //Exchange Related
 #include "WireFormat.h"
 #include "OrderBook.h"
+#include "Order.h"
 #include "Constants.h"
 #include <nlohmann/json.hpp>
 
-struct AddOrder
-{
-    uint64_t            timestamp;
-    uint64_t            order_id;
-    uint32_t            price;
-    uint32_t            quantity;
-    std::string         side;
-    std::string         type;
-    uint8_t             kind;
-};
+
+
 
 struct ExecuteOrder
 {
@@ -47,12 +40,12 @@ struct DeleteOrder
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AddOrder,
                                    timestamp,
-                                   order_id,
-                                   price,
+                                   client_order_id,
+                                   instrument_id,
                                    quantity,
-                                   side,
-                                   type,
-                                   kind)
+                                   price,
+                                   tif,
+                                   side)
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ExecuteOrder,
                                    timestamp,
@@ -89,15 +82,9 @@ class   Exchange
 
     Exchange() = default;
 
-    Exchange(RxRingBuffer<RxDesc, 
-                 ExchangeInetConst::TX_RING_SIZE> &tx_inet_ring_buffer, RxRingBuffer<RxDesc, 
-                 ExchangeInetConst::TX_RING_SIZE> &rx_inet_ring_buffer) : tx_inet_RingBuffer_(tx_inet_ring_buffer), rx_inet_RingBuffer_(rx_inet_ring_buffer)
-    {
-    }
-
     void    printOrder(const AddOrder    &order)
     {
-        std::cout << order.order_id << ", " << order.price << ", " << order.quantity << ", " << order.timestamp << std::endl;
+        std::cout << order.client_order_id << ", " << order.price << ", " << order.quantity << ", " << order.timestamp << std::endl;
     }
 
     // void    Parse()
@@ -126,6 +113,26 @@ class   Exchange
     //USE CASES FUNCTIONS
     virtual int     run()
     {
+        std::cout << "KSE - [Kinshasa Stock Exchange Running !]" << std::endl;
+
+        while (1)
+        {
+            if (gate_match_engine_command_ring.tail != gate_match_engine_command_ring.head)
+            {
+                uint64_t command_nb = gate_match_engine_command_ring.tail.load(std::memory_order_acquire);
+                // std::visit([](const auto &v){
+
+                // });
+                // switch(gate_match_engine_command_ring.command_content.[command_nb].type)
+                // {
+                //     case OrderType::AddOrder :
+                //     const OrderPool    &order_pool = gate_match_engine_command_ring.data[command_nb].command_content;
+                //     std::cout << "AddOrder : client_order_id(" << order_pool.add_order.client_order_id << "), instrument_id = (" << order_pool.add_order.instrument_id << "), price = (" << order_pool.add_order.price << "), quantity = (" << order_pool.add_order.quantity << "), ";
+                //     break;
+                // }
+                gate_match_engine_command_ring.tail.store(command_nb+1, std::memory_order_release);
+            }
+        }
         //feedHandler();
         return 0;
     }
@@ -142,17 +149,16 @@ class   Exchange
 
     //BUSINESS FUNCTIONS
 
-
-
+    RxRingBuffer<ExchangeInetConst::RX_RING_SIZE, AddOrder>   &getCommandRing()
+    {
+        return gate_match_engine_command_ring;
+    }
     protected :
     OrderBook             orderBook_;
     ExchangeConfig        config_;
 
-   
-    RxRingBuffer<RxDesc, 
-                 ExchangeInetConst::TX_RING_SIZE>   &tx_inet_RingBuffer_;
-    RxRingBuffer<RxDesc, 
-                 ExchangeInetConst::RX_RING_SIZE>   &rx_inet_RingBuffer_;
+    RxRingBuffer<ExchangeInetConst::RX_RING_SIZE, AddOrder>   gate_match_engine_command_ring;
+    RxRingBuffer<ExchangeInetConst::TX_RING_SIZE, AddOrder>   order_confirmation_command_ring;
 
     Msg                   msg_;
     //FeedHandler
@@ -163,9 +169,7 @@ class   ExchangeScenario : public Exchange
 {
     public :
     ExchangeScenario() = delete;
-    ExchangeScenario(const std::string    &exchangeDataFile, RxRingBuffer<RxDesc, ExchangeInetConst::TX_RING_SIZE> &tx_ring_buffer,
-                    RxRingBuffer<RxDesc, ExchangeInetConst::RX_RING_SIZE> &rx_ring_buffer) 
-                    : Exchange(tx_ring_buffer, rx_ring_buffer), exchangeDataFile_(exchangeDataFile)
+    ExchangeScenario(const std::string    &exchangeDataFile) : exchangeDataFile_(exchangeDataFile)
     {
     }
 
@@ -187,6 +191,7 @@ class   ExchangeScenario : public Exchange
             if (orders[i]["type"] == "NEW")
             {
                 AddOrder order = orders[i].get<AddOrder>();
+                
                 orderBook_.addOrder(Msg());
                 typedef struct alignas(64) Msg
                 {
@@ -224,14 +229,9 @@ class   ExchangeRandom : public Exchange
 {
     public :    
     ExchangeRandom() = default;
-    ExchangeRandom(RxRingBuffer<RxDesc, ExchangeInetConst::TX_RING_SIZE> &tx_ring_buffer,
-                    RxRingBuffer<RxDesc, ExchangeInetConst::RX_RING_SIZE> &rx_ring_buffer) 
-                    : Exchange(tx_ring_buffer, rx_ring_buffer)
-    {
-    }
     int     run()
     {
-        std::cout << "KSE - [Kinshasa Stock Exchange Running !]" << std::endl;
+        
         Exchange::run();
         return 0;
     };

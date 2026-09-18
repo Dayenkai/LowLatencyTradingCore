@@ -4,7 +4,14 @@
 
 uint64_t SessionGateway::seq = 0;
 
-int SessionGateway::ListenOrderEntryTCP(RxRingBuffer<RxDesc, ExchangeInetConst::TX_RING_SIZE> &order_entry_command_ring, MemoryPool  *memory_pool)
+
+// void SessionGateway::PacketParser(char *buffer)
+// {
+//     gateway_buffer += std::string(buffer);
+//     std::memcpy()
+// }
+
+int SessionGateway::ListenOrderEntryTCP(RxRingBuffer<ExchangeInetConst::RX_RING_SIZE, AddOrder> &order_entry_command_ring)
 {
     std::cout << "IN " << __func__ << std::endl;
     int listen_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -128,12 +135,13 @@ int SessionGateway::ListenOrderEntryTCP(RxRingBuffer<RxDesc, ExchangeInetConst::
             << " bytes\n";
 
         std::cout.write(buffer, received);
-        if (((order_entry_command_ring.head + 1) & ExchangeInetConst::TX_RING_SIZE -1) != (order_entry_command_ring.tail))
-        {
-            memcpy(&order_entry_command_ring.data, buffer, strlen(buffer));
-            auto head = order_entry_command_ring.head.load(std::memory_order_acquire);
-            order_entry_command_ring.head.store(head+1,std::memory_order_release);
-        }
+        // if ()
+        // if (((order_entry_command_ring.head + 1) & ExchangeInetConst::TX_RING_SIZE -1) != (order_entry_command_ring.tail))
+        // {
+        //     memcpy(&order_entry_command_ring.data, buffer, strlen(buffer));
+        //     auto head = order_entry_command_ring.head.load(std::memory_order_acquire);
+        //     order_entry_command_ring.head.store(head+1,std::memory_order_release);
+        // }
         std::cout << '\n';
     }
 
