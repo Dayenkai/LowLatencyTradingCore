@@ -13,31 +13,6 @@
 #include <nlohmann/json.hpp>
 
 
-
-
-struct ExecuteOrder
-{
-    uint64_t    timestamp;
-    uint64_t    order_id;
-    uint32_t    quantity;
-    std::string type;
-};
-
-struct CancelOrder
-{
-    uint64_t    timestamp;
-    uint64_t    order_id;
-    uint32_t    quantity;
-    std::string type;
-};
-
-struct DeleteOrder
-{
-    uint64_t    timestamp;
-    uint64_t    order_id;
-    std::string type;
-};
-
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AddOrder,
                                    timestamp,
                                    client_order_id,
@@ -49,20 +24,21 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AddOrder,
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ExecuteOrder,
                                    timestamp,
-                                   order_id,
+                                   client_order_id,
+                                   instrument_id,
                                    quantity,
                                    type)
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(CancelOrder,
                                    timestamp,
-                                   order_id,
-                                   quantity,
-                                   type)
+                                   client_order_id,
+                                   instrument_id)
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DeleteOrder,
                                    timestamp,
-                                   order_id,
-                                   type)
+                                   client_order_id,
+                                   instrument_id,
+                                   quantity)
 
 
 

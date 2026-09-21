@@ -54,12 +54,63 @@ class   SessionGateway
 
     struct  PacketParser
     {
-        std::byte                                             packet_buffer[26];
-        char                                                  parsing_type = 'E';//THe current parsing type
-        size_t                                                parsing_cursor = 0;//PLace where the filling of packet_buffer stops
-        size_t                                                parsing_bound_len = 0;//According to parsing_type
-        bool                                                  ignore_content = false;
+        struct AddOrderParser
+        {
+            void    parseAddOrder(std::byte packet_buffer[26], size_t &parsing_cursor,//PLace where the filling of packet_buffer stops
+                                                               size_t &parsing_bound_len)
+            {
+
+            }
+            /* data */
+        };
+        struct CancelOrderParser
+        {
+            void    parseCancelOrder(std::byte packet_buffer[26], size_t &parsing_cursor,//PLace where the filling of packet_buffer stops
+                                                               size_t &parsing_bound_len)
+            {
+
+            }
+            /* data */
+        };
+        struct DeleteOrderParser
+        {
+            void    parseDeleteOrder(std::byte packet_buffer[26], size_t &parsing_cursor,//PLace where the filling of packet_buffer stops
+                                                               size_t &parsing_bound_len)
+            {
+
+            }
+            /* data */
+        };
+        struct ExecuteOrderParser
+        {
+            void    parseExecuteOrder(std::byte packet_buffer[26], size_t &parsing_cursor,//PLace where the filling of packet_buffer stops
+                                                               size_t &parsing_bound_len)
+            {
+
+            }
+            /* data */
+        };
+
+        using   ParserTypePackage = std::variant<AddOrderParser,CancelOrderParser,
+                                    ExecuteOrderParser,DeleteOrderParser>;
+
+        enum class  ParsingContext : uint8_t
+        {
+            InProgress = 0, IgnoreContent = 1
+        };
+
+
+        std::byte                                                   parser_buffer[26];
+        std::span<std::byte>                                        inbound_packet;
+
+        size_t                                                      parsing_cursor = 0;//PLace where the filling of packet_buffer stops
+        size_t                                                      parsing_bound_len = 0;//According to parsing_type
+        uint8_t                                                     parsing_infos = 0;//First bit is for parsing currently processed, second is for ignoring_current_parsing_iteration. May reserve the 6 remaining bits for more information.
+        ParserTypePackage                                           order_entry;
         
+
+
+
         //parsing bound is the limit of the max length of the parsing_type
         //the characters that we add is length of buffer & what remains empty(packet_buffer)
         //THe character that we also compare to ignore the invalidd type format is the same formula
@@ -75,31 +126,33 @@ class   SessionGateway
         //To take then the content of the current input buffer to packet_buffer, we must do LengthOfEmptySlots & InputBufferLength-second_cursor)
 
         //The outter loop is then as long as there is one available byte to identify the parsing byte, and thatbyte disponiblesomething to fill
-        void    parsing(const std::span<std::byte>    &inbound_data)
-        {
-            switch (parsing_type)
-            {
-                case 'E':
-                
-                char order_type = static_cast<char>(packet_buffer[0]);
-                if (order_type == 'A')
-                {
-                    parsing_type = 'A';
-                    // if (parsing_pos >= 26)
-                    // {
-                        
-                    // }
-                    //If parsing doesn't match the format, ignore = true;
-                }
-                else
-                {
-                    ignore_content = true;
-                }
-                break;
-            }
 
+        
+        void    parse(const std::span<std::byte>    &inbound_data)
+        {
+
+            if (!inbound_data.empty() && (parsing_infos & (static_cast<uint8_t>(1) << ParsingContext::InProgress)))[[likely]] 
+            {
+                std::visit([&](auto &parser)
+                {
+                    using   parserType = std::decay_t<decltype(parser)>;
+
+                    if constexpr(std::is_same_v<parserType, AddOrderParser>){
+                        parsing_infos |= 1 << static_cast<uint8_t>(ParsingContext::InProgress);//Parsing in progress
+                        parsing_infos |= 1 << static_cast<uint8_t>(ParsingContext::IgnoreContent);//Don't ignore next parsing iteration
+                        parser.parseAddOrder(parser_buffer, parsing_cursor, parsing_bound_len);}
+
+                    else if constexpr(std::is_same_v<parserType, CancelOrderParser>){
+                        parser.parseCancelOrder(parser_buffer, parsing_cursor, parsing_bound_len);}
+
+                    else if constexpr(std::is_same_v<parserType, DeleteOrderParser>){
+                        parser.parseDeleteOrder(parser_buffer, parsing_cursor, parsing_bound_len);}
+
+                    else if constexpr(std::is_same_v<parserType, ExecuteOrderParser>){
+                        parser.parseExecuteOrder(parser_buffer, parsing_cursor, parsing_bound_len);}
+                }, order_entry);
+            }
         }
-    };
 
     private:
     static  uint64_t                                      seq;

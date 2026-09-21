@@ -20,5 +20,33 @@ struct   AddOrder : public ClientOrder
     Side        side;
 };
 
+struct CancelOrder : public ClientOrder
+{
+};
+
+struct ExecuteOrder : public ClientOrder
+{
+    uint32_t    quantity;
+    std::string type;
+};
+
+struct DeleteOrder : public ClientOrder
+{
+    uint32_t    quantity;
+};
+
+
+// struct CancelOrder : public ClientOrder
+// {
+//     /* data */
+// };
+
+// struct DeleteOrder : public ClientOrder
+// {
+//     public:
+//     uint32_t    quantity;
+//     uint32_t    price;
+//     /* data */
+// };
 
 #endif
