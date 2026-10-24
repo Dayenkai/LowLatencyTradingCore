@@ -102,15 +102,46 @@ typedef struct alignas(64) Order
     {
         
     }
-    Order(uint32_t qty, uint32_t price, Side side, uint16_t id, Order_Type type) : qty_(qty), price_(price), _side(side), _id(id), _event_type(type)
+    Order(uint32_t qty, uint32_t price, Side side, uint16_t id, Order_Type type) : qty_(qty), price_(price), side_(side), id_(id), event_type_(type)
     {
     }
+
+    Order&  setId(uint16_t id)
+    {
+        id_ = id;
+        return *this;
+    }
+
+    Order&  setPrice(uint32_t price)
+    {
+        price_ = price;
+        return *this;
+    }
+
+    Order&  setQty(uint32_t qty)
+    {
+        qty_ = qty;
+        return *this;
+    }
+
+    Order&  setSide(Side side)
+    {
+        side_ = side;
+        return *this;
+    }
+
+    Order&  setType(Order_Type event_type)
+    {
+        event_type_ = event_type;
+        return *this;
+    }
+
     uint32_t        qty_;
     uint32_t        price_;
-    uint16_t        _id;
-    Side            _side;
-    Order_Type     _event_type;
-    OrderQtyKind   _kind;
+    uint16_t        id_;
+    Side            side_;
+    Order_Type      event_type_;
+    OrderQtyKind    kind_;
 }Order;
 
 

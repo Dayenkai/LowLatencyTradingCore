@@ -8,6 +8,7 @@
 
 //STRING MANIPULATION
 #include <cstring>
+#include <cctype>
 
 //BIT MANIPULATION
 #include <bit>
@@ -28,3 +29,6 @@
 #include <chrono>
 using Clock = std::chrono::steady_clock;
 using TimePoint = Clock::time_point;
+
+//OPTIONAL
+#include <optional>

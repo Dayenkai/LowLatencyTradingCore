@@ -68,6 +68,7 @@ struct EnterOrder {
 
 Simplification :
 
+'O'
 struct EnterOrder {
     uint32_t clientOrderId;
     uint32_t instrumentId;
@@ -76,6 +77,27 @@ struct EnterOrder {
     int64_t price;
     TimeInfForce    tif;
 };
+
+
+'U'
+struct ReplaceOrder
+{
+    uint32_t    originalClientOrderId;
+    uint32_t    replacementClientOrderId;
+    uint32_t    totalQuantity;
+    int64_t     newPrice;
+    TimeInForce newTif;
+};
+
+'X'
+struct CancelOrder
+{
+    uint32_t clientOrderId;
+    uint32_t intendedTotalQuantity;
+};
+
+
+
 
 
 Type 'A' ->

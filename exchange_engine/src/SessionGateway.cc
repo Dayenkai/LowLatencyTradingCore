@@ -13,7 +13,7 @@ uint64_t SessionGateway::seq = 0;
 
 int SessionGateway::ListenOrderEntryTCP(RxRingBuffer<ExchangeInetConst::RX_RING_SIZE, AddOrder> &order_entry_command_ring)
 {
-    std::cout << "IN " << __func__ << std::endl;
+    //std::cout << "IN " << __func__ << std::endl;
     int listen_fd = socket(AF_INET, SOCK_STREAM, 0);
 
     if (listen_fd < 0) {
@@ -45,11 +45,11 @@ int SessionGateway::ListenOrderEntryTCP(RxRingBuffer<ExchangeInetConst::RX_RING_
         return 1;
     }
 
-    std::cout
-    << "ABOUT TO BIND TCP 127.0.0.1:9000"
-    << " fd=" << listen_fd
-    << " thread=" << std::this_thread::get_id()
-    << '\n';
+    // std::cout
+    // << "ABOUT TO BIND TCP 127.0.0.1:9000"
+    // << " fd=" << listen_fd
+    // << " thread=" << std::this_thread::get_id()
+    // << '\n';
 
     if (bind(
         listen_fd,
@@ -71,7 +71,7 @@ int SessionGateway::ListenOrderEntryTCP(RxRingBuffer<ExchangeInetConst::RX_RING_
 
     std::cout
         << "TCP Order Entry listening on 127.0.0.1:9000 "
-        << "[Supreme Running - Kilibanseke Trading Client]\n";
+        << "[Supreme Runner - Kilibanseke Trading Client]\n";
 
     sockaddr_in client{};
     socklen_t client_len = sizeof(client);
@@ -82,7 +82,7 @@ int SessionGateway::ListenOrderEntryTCP(RxRingBuffer<ExchangeInetConst::RX_RING_
         &client_len
     );
 
-    std::cout << "ACCEPT RETURNED client_fd_=" << client_fd_ << '\n';
+    //std::cout << "ACCEPT RETURNED client_fd_=" << client_fd_ << '\n';
 
     if (client_fd_ < 0) {
         perror("accept");
@@ -135,6 +135,9 @@ int SessionGateway::ListenOrderEntryTCP(RxRingBuffer<ExchangeInetConst::RX_RING_
             << " bytes\n";
 
         std::cout.write(buffer, received);
+
+        std::byte *data = reinterpret_cast<std::byte*>(&buffer[0]);//We change the format for clarity purposes
+        parser.parse(std::span<std::byte>(data, received), order_entry_command_ring);
         // if ()
         // if (((order_entry_command_ring.head + 1) & ExchangeInetConst::TX_RING_SIZE -1) != (order_entry_command_ring.tail))
         // {
@@ -153,7 +156,8 @@ int SessionGateway::ListenOrderEntryTCP(RxRingBuffer<ExchangeInetConst::RX_RING_
 
 int SessionGateway::SendMarketDataUDP()
 {
-    std::cout << "IN " << __func__ << std::endl;
+    //std::cout << "IN " << __func__ << std::endl;
+    std::cout << "[Running Kinshasa Stock Exchange UDP Multicast on port 9001...]\n";
     int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 
     if (sockfd < 0)
@@ -197,7 +201,7 @@ int SessionGateway::SendMarketDataUDP()
             return 1;
         }
 
-        std::cout << "Sent " << sent << " bytes[UDP]\n";
+        std::cout << "Sent " << buffer << " - " << sent << " bytes[UDP]\n";
     }
 
     // 5. Release the socket kernel resource
@@ -206,20 +210,36 @@ int SessionGateway::SendMarketDataUDP()
     return 0;
 }
 
-int SessionGateway::SendOrderFeedbackTCP()
+int SessionGateway::SendOrderFeedbackTCP(RxRingBuffer<ExchangeInetConst::TX_RING_SIZE, OrderConfirmation> &order_feedback_ring)
 {
-    std::cout << "IN " << __func__ << std::endl;
+    //std::cout << "IN " << __func__ << std::endl;
     while (client_fd_ < 0) {
         ;
     }
-    std::cout << "Connected to Supreme Running : Kilibanseke Trading Client TCP Feedback Server\n";
+    std::cout << "Connected to Supreme Runner : Kilibanseke Trading Client TCP Feedback Server\n";
 
     while (true)
     {
-
         std::string order;
 
-        std::getline(std::cin, order);
+        if (order_feedback_ring.tail != order_feedback_ring.head)
+        {
+            auto tail_tmp = order_feedback_ring.tail.load();
+            size_t command_index = order_feedback_ring.tail.load(std::memory_order_acquire);
+            std::visit([&](auto order_confirmation){
+
+                using OrderConfirmationType = std::decay_t<decltype(order_confirmation)>;
+
+                if constexpr (std::is_same_v<OrderConfirmationType, OrderConfirmation>)
+                {
+                    std::stringstream   ss;
+
+                    ss << "Order:clientId(" << order_confirmation.clientOrderId << ")" << ",exchangeId("<<order_confirmation.exchangeOrderId<<"),price("<<order_confirmation.price<<"),quantity("<<order_confirmation.quantity<<"),State("<< (order_confirmation.state == OrderState::Accepted ? "Accepted" : "Declined") << ")\n";
+                    order += ss.str();
+                }
+            }, order_feedback_ring.command_content[command_index]);
+            order_feedback_ring.tail.store((tail_tmp+1) & (ExchangeInetConst::TX_RING_SIZE - 1) , std::memory_order_release);
+        
 
         if (order.empty())
             continue;
@@ -238,9 +258,12 @@ int SessionGateway::SendOrderFeedbackTCP()
         }
 
         std::cout
-            << "Sent "
+            << "Sent : "
+            << order
+            << "- "
             << sent
             << " bytes[TCP]\n";
+        }
     }
 
     close(client_fd_);

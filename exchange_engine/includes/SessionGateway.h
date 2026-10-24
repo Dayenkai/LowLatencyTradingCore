@@ -10,10 +10,40 @@
 #include <cstring>
 #include <atomic>
 #include <thread>
+#include <span>
+#include <functional>
 #include "Constants.h"
 #include "Order.h"
-#include <span>
 
+
+namespace   TCPParsing
+{
+    enum class AddOrder : uint8_t
+    {
+        ClientOrderId = 0, InstrumentId = 4, Side = 12, Quantity = 13, Price = 17, TIF = 21
+    };
+    constexpr uint8_t addOrderFieldNb = 6;
+    constexpr uint8_t addOrderLength = 24;
+    inline std::array<size_t, addOrderFieldNb> addOrderFieldlen = {4,8,1,4,4,1};
+
+
+    enum class ReplaceOrder : uint8_t
+    {
+        OriginalClientOrderId = 0, ReplacementClientOrderId = 4, TotalQuantity = 8, NewPrice = 12, TIF = 20
+    };
+    constexpr uint8_t replaceOrderFieldNb = 5;
+    constexpr uint8_t replaceOrderLength = 17;
+    inline std::array<size_t, replaceOrderFieldNb> replaceOrderFieldlen = {4,4,4,4,1};
+
+
+    enum class CancelOrder : uint8_t
+    {
+        ClientOrderId = 0, IntendedTotalQuantity = 4
+    };
+    constexpr uint8_t cancelOrderFieldNb = 5;
+    constexpr uint8_t cancelOrderLength = 8;
+    inline std::array<size_t, cancelOrderFieldNb> CancelOrderFieldlen = {4,4};
+}
 class   Session
 {
     uint64_t    client_id;
@@ -32,9 +62,8 @@ class   SessionGateway
     void    AssignSequence();
     
     int     ListenOrderEntryTCP(RxRingBuffer<ExchangeInetConst::RX_RING_SIZE, AddOrder> &order_entry_command_ring);
-    int     SendOrderEntryFeedbackTCP();
     int     SendMarketDataUDP();
-    int     SendOrderFeedbackTCP();
+    int     SendOrderFeedbackTCP(RxRingBuffer<ExchangeInetConst::TX_RING_SIZE, OrderConfirmation> &order_entry_feedback_ring);
 
 
     int     SendOrder();
@@ -56,43 +85,211 @@ class   SessionGateway
     {
         struct AddOrderParser
         {
-            void    parseAddOrder(std::byte packet_buffer[26], size_t &parsing_cursor,//PLace where the filling of packet_buffer stops
-                                                               size_t &parsing_bound_len)
+            AddOrderParser()
             {
+                newOrder.client_order_id = 0;
+                newOrder.instrument_id = 0;
+                newOrder.price = 0;
+                newOrder.quantity = 0;
+                newOrder.side = Side::Sell;
+                newOrder.tif = 0;
+                newOrder.timestamp = 0;
 
             }
+            void    parseAddOrder(std::byte packet_buffer[26], std::span<std::byte>    &inbound_data, size_t &parsing_cursor, uint8_t &parsing_infos, RxRingBuffer<ExchangeInetConst::RX_RING_SIZE, AddOrder> &order_entry_command_ring)//PLace where the filling of packet_buffer stops)
+            {
+                std::cout << "IN " << __func__ << std::endl;
+                while ((parsing_infos & static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::InProgress)))
+                {
+                    switch(parsing_cursor)
+                    {
+                        case static_cast<uint8_t>(TCPParsing::AddOrder::ClientOrderId):
+                        {
+                            auto field = inbound_data.subspan(1, TCPParsing::addOrderFieldlen[0]);
+                            if (field.size() < TCPParsing::addOrderFieldlen[0] || std::find_if(field.begin(), field.end(), [](std::byte c){return !std::isdigit(static_cast<char>(c));}) != field.end())
+                            {
+                                parsing_infos &= ~(static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::InProgress)) ;//Don't ignore next parsing iteration
+                                parsing_infos |= (static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::IgnoreContent));
+                                parsing_cursor = 0;
+                            }
+                            else
+                            {
+                                
+                                for (size_t  i = 0; i < TCPParsing::addOrderFieldlen[0]; i++)
+                                {
+                                    newOrder.client_order_id |= static_cast<uint32_t>(field[i]) << i * CHAR_BIT;
+                                }
+                                std::cout << "ClientOrder_id : [" << newOrder.client_order_id << "]\n";
+                                parsing_cursor+= TCPParsing::addOrderFieldlen[0];
+                                inbound_data = inbound_data.subspan(TCPParsing::addOrderFieldlen[1]+1);
+                            }
+                        }
+                        break;
+
+                        case static_cast<uint8_t>(TCPParsing::AddOrder::InstrumentId):
+                        {
+                            auto field = inbound_data.subspan(0, TCPParsing::addOrderFieldlen[1]);
+                                if (field.size() < TCPParsing::addOrderFieldlen[1] || std::find_if(field.begin(), field.end(), [](std::byte c){return !std::isdigit(static_cast<char>(c)) && !std::isalpha(static_cast<char>(c));}) != field.end())
+                                {
+                                    std::cout << "Error : Incorrect Instrument Id" << std::endl;
+                                    parsing_infos &= ~(static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::InProgress)) ;//Don't ignore next parsing iteration
+                                    parsing_infos |= (static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::IgnoreContent));
+                                    parsing_cursor = 0;
+                                }
+                                else
+                                {
+                                    
+                                    for (size_t  i = 0; i < TCPParsing::addOrderFieldlen[1]; i++)
+                                    {
+                                        newOrder.instrument_id |= static_cast<uint64_t>(field[i]) << i * CHAR_BIT;
+                                    }                                    
+                                    std::cout << "Instrument_id : [" << newOrder.client_order_id << "]\n";
+                                    parsing_cursor+= TCPParsing::addOrderFieldlen[1];
+                                    inbound_data = inbound_data.subspan(TCPParsing::addOrderFieldlen[1]);
+                                }
+                        }
+                        break;
+
+                        case static_cast<uint8_t>(TCPParsing::AddOrder::Side):
+                        {
+                            auto field = inbound_data.subspan(0, TCPParsing::addOrderFieldlen[2]);
+                                if (field.size() < TCPParsing::addOrderFieldlen[2] || std::find_if(field.begin(), field.end(), [](std::byte c){return char(c)-'0'!=0 && char(c)-'0'!=1;}) != field.end())
+                                {
+                                    std::cout << "Error : Incorrect Side" << std::endl;
+                                    parsing_infos &= ~(static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::InProgress)) ;//Don't ignore next parsing iteration
+                                    parsing_infos |= (static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::IgnoreContent));
+                                    parsing_cursor = 0;
+                                }
+                                else
+                                {
+                                    
+                                    for (size_t  i = 0; i < TCPParsing::addOrderFieldlen[2]; i++)
+                                    {
+                                        newOrder.side = static_cast<Side>(field[i]) ;
+                                        std::cout << "Side : [" << ((bool)newOrder.side == false ? "Sell]" : "Buy]") << "\n";
+                                    }                                    
+                                    parsing_cursor+= TCPParsing::addOrderFieldlen[2];
+                                    inbound_data = inbound_data.subspan(TCPParsing::addOrderFieldlen[2]);
+                                }
+                        }
+                        break;
+
+                        
+
+                        case static_cast<uint8_t>(TCPParsing::AddOrder::Quantity):
+                        {
+                            auto field = inbound_data.subspan(0, TCPParsing::addOrderFieldlen[3]);
+                                 if (field.size() < TCPParsing::addOrderFieldlen[3] || std::find_if(field.begin(), field.end(), [](std::byte c){return !std::isdigit(static_cast<char>(c));}) != field.end())
+                                {
+                                    std::cout << "Error : Incorrect Quantity" << std::endl;
+                                    parsing_infos &= ~(static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::InProgress)) ;//Don't ignore next parsing iteration
+                                    parsing_infos |= (static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::IgnoreContent));
+                                    parsing_cursor = 0;
+                                }
+                                else
+                                {
+                                    
+                                    for (size_t  i = 0; i < TCPParsing::addOrderFieldlen[3]; i++)
+                                    {
+                                        newOrder.quantity |= static_cast<uint32_t>(field[i]) << i * CHAR_BIT;
+                                    }
+                                    std::cout << "Quantity : [" << newOrder.client_order_id << "]\n";
+                                    parsing_cursor+= TCPParsing::addOrderFieldlen[3];
+                                    inbound_data = inbound_data.subspan(TCPParsing::addOrderFieldlen[3]);
+                                }
+                        }
+                        break;
+
+                        case static_cast<uint8_t>(TCPParsing::AddOrder::Price):
+                        {
+                            auto field = inbound_data.subspan(0, TCPParsing::addOrderFieldlen[4]);
+                                if (field.size() < TCPParsing::addOrderFieldlen[4] || std::find_if(field.begin(), field.end(), [](std::byte c){return !std::isdigit(static_cast<char>(c));}) != field.end())
+                                {
+                                    std::cout << "Error : Incorrect Price : " << std::string(reinterpret_cast<char*>(field.data()),field.size()) << std::endl;
+                                    parsing_infos &= ~(static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::InProgress)) ;//Don't ignore next parsing iteration
+                                    parsing_infos |= (static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::IgnoreContent));
+                                    parsing_cursor = 0;
+                                }
+                                else
+                                {
+                                    
+                                    for (size_t  i = 0; i < TCPParsing::addOrderFieldlen[4]; i++)
+                                    {
+                                        newOrder.price |= static_cast<uint32_t>(field[i]) << i * CHAR_BIT;
+                                    }
+                                    std::cout << "Price : [" << newOrder.client_order_id << "]\n";
+                                    parsing_cursor+= TCPParsing::addOrderFieldlen[4];
+                                    inbound_data = inbound_data.subspan(static_cast<size_t>(TCPParsing::addOrderFieldlen[4]));
+                                }
+                        }
+                        break;
+
+                        case static_cast<uint8_t>(TCPParsing::AddOrder::TIF):
+                        {
+                            auto i = order_entry_command_ring.head.load(std::memory_order_acquire);
+                            bool written = false;
+                            while(!written)
+                            {
+                                if ((((order_entry_command_ring.head + 1) & (exchange_engine::RX_RING_SIZE - 1)) != order_entry_command_ring.tail))
+                                {
+                                    order_entry_command_ring.command_content[order_entry_command_ring.head] = newOrder;
+                                    order_entry_command_ring.head.store((order_entry_command_ring.head+1) & (exchange_engine::RX_RING_SIZE - 1), std::memory_order_release);
+                                    written = true;
+                                }
+                            }
+                            parsing_infos &= ~(static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::InProgress)) ;//Don't ignore next parsing iteration
+                            inbound_data = inbound_data.subspan(static_cast<size_t>(TCPParsing::addOrderFieldlen[5]));
+                            parsing_cursor = 0;
+                        }
+
+                        break;
+                    }
+                }
+            }
+            AddOrder    newOrder;
             /* data */
         };
         struct CancelOrderParser
         {
-            void    parseCancelOrder(std::byte packet_buffer[26], size_t &parsing_cursor,//PLace where the filling of packet_buffer stops
-                                                               size_t &parsing_bound_len)
+            void    parseCancelOrder(std::byte packet_buffer[26], std::span<std::byte>    &inbound_data, size_t &parsing_cursor, uint8_t &parsing_infos,  RxRingBuffer<ExchangeInetConst::RX_RING_SIZE, AddOrder> &order_entry_command_ring)//PLace where the filling of packet_buffer stops
             {
 
             }
+            CancelOrder    newOrder;
             /* data */
         };
-        struct DeleteOrderParser
+
+        struct ReplaceOrderParser
         {
-            void    parseDeleteOrder(std::byte packet_buffer[26], size_t &parsing_cursor,//PLace where the filling of packet_buffer stops
-                                                               size_t &parsing_bound_len)
+            void    parseReplaceOrder(std::byte packet_buffer[26], std::span<std::byte>    &inbound_data, size_t &parsing_cursor, uint8_t &parsing_infos, RxRingBuffer<ExchangeInetConst::RX_RING_SIZE, AddOrder> &order_entry_command_ring)//PLace where the filling of packet_buffer stops)
             {
 
             }
+            //ReplaceOrder    newOrder;
+            /* data */
+        };
+        struct ModifyOrderParser
+        {
+            void    parseModifyOrder(std::byte packet_buffer[26], std::span<std::byte>    &inbound_data, size_t &parsing_cursor, uint8_t &parsing_infos, RxRingBuffer<ExchangeInetConst::RX_RING_SIZE, AddOrder> &order_entry_command_ring)//PLace where the filling of packet_buffer stops)
+            {
+
+            }
+            //ModifyOrder newOrder;
             /* data */
         };
         struct ExecuteOrderParser
         {
-            void    parseExecuteOrder(std::byte packet_buffer[26], size_t &parsing_cursor,//PLace where the filling of packet_buffer stops
-                                                               size_t &parsing_bound_len)
+            void    parseExecuteOrder(std::byte packet_buffer[26], std::span<std::byte>    &inbound_data,  size_t &parsing_cursor, uint8_t &parsing_infos, RxRingBuffer<ExchangeInetConst::RX_RING_SIZE, AddOrder> &order_entry_command_ring)//PLace where the filling of packet_buffer stops)
             {
 
             }
+            //ExecuteOrder newOrder
             /* data */
         };
 
-        using   ParserTypePackage = std::variant<AddOrderParser,CancelOrderParser,
-                                    ExecuteOrderParser,DeleteOrderParser>;
+        using   ParserTypePackage = std::variant<AddOrderParser,ReplaceOrderParser,
+                                    ExecuteOrderParser,
+                                    CancelOrderParser, ModifyOrderParser>;
 
         enum class  ParsingContext : uint8_t
         {
@@ -101,7 +298,7 @@ class   SessionGateway
 
 
         std::byte                                                   parser_buffer[26];
-        std::span<std::byte>                                        inbound_packet;
+        //std::span<std::byte>                                      inbound_packet;
 
         size_t                                                      parsing_cursor = 0;//PLace where the filling of packet_buffer stops
         size_t                                                      parsing_bound_len = 0;//According to parsing_type
@@ -128,31 +325,54 @@ class   SessionGateway
         //The outter loop is then as long as there is one available byte to identify the parsing byte, and thatbyte disponiblesomething to fill
 
         
-        void    parse(const std::span<std::byte>    &inbound_data)
+        void    parse(std::span<std::byte>    inbound_data, RxRingBuffer<ExchangeInetConst::RX_RING_SIZE, AddOrder> &order_entry_command_ring)
         {
+            std::cout << "In [" << __func__ << "]\n";
+            parsing_infos &= ~(static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::IgnoreContent));//Reinitialize Parsing Errors
 
-            if (!inbound_data.empty() && (parsing_infos & (static_cast<uint8_t>(1) << ParsingContext::InProgress)))[[likely]] 
+
+            while (!inbound_data.empty() && !(parsing_infos & static_cast<uint8_t>(1) << static_cast<uint8_t>(ParsingContext::IgnoreContent)))[[likely]] 
             {
+                if (!(parsing_infos & (static_cast<uint8_t>(1) << static_cast<uint8_t>(ParsingContext::InProgress))))
+                {
+                    switch(inbound_data[0])
+                    {
+                        case static_cast<std::byte>('O'):
+                        order_entry = AddOrderParser();
+                        break;
+                        case static_cast<std::byte>('U'):
+                        order_entry = ReplaceOrderParser();
+                        break;
+                        case static_cast<std::byte>('X'):
+                        order_entry = CancelOrderParser();
+                        break;
+                        default:
+                         std::cout << "(" << static_cast<char>(inbound_data[0]) << ")<Error 42 - Unknown Instruction>, size of span is " << inbound_data.size()<<std::endl;
+                         return;
+                        break;
+                    }
+                }
                 std::visit([&](auto &parser)
                 {
                     using   parserType = std::decay_t<decltype(parser)>;
 
                     if constexpr(std::is_same_v<parserType, AddOrderParser>){
-                        parsing_infos |= 1 << static_cast<uint8_t>(ParsingContext::InProgress);//Parsing in progress
-                        parsing_infos |= 1 << static_cast<uint8_t>(ParsingContext::IgnoreContent);//Don't ignore next parsing iteration
-                        parser.parseAddOrder(parser_buffer, parsing_cursor, parsing_bound_len);}
+                        parsing_infos |= static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::InProgress);//Parsing in progress
+                        //parsing_infos |= 0 << static_cast<uint8_t>(ParsingContext::IgnoreContent);//Don't ignore next parsing iteration
+                        parser.parseAddOrder(parser_buffer, inbound_data, parsing_cursor, parsing_infos, order_entry_command_ring);}
 
                     else if constexpr(std::is_same_v<parserType, CancelOrderParser>){
-                        parser.parseCancelOrder(parser_buffer, parsing_cursor, parsing_bound_len);}
+                        parser.parseCancelOrder(parser_buffer, inbound_data, parsing_cursor, parsing_infos, order_entry_command_ring);}
 
-                    else if constexpr(std::is_same_v<parserType, DeleteOrderParser>){
-                        parser.parseDeleteOrder(parser_buffer, parsing_cursor, parsing_bound_len);}
+                    else if constexpr(std::is_same_v<parserType, ModifyOrderParser>){
+                        parser.parseModifyOrder(parser_buffer, inbound_data, parsing_cursor, parsing_infos,  order_entry_command_ring);}
 
                     else if constexpr(std::is_same_v<parserType, ExecuteOrderParser>){
-                        parser.parseExecuteOrder(parser_buffer, parsing_cursor, parsing_bound_len);}
+                        parser.parseExecuteOrder(parser_buffer, inbound_data, parsing_cursor, parsing_infos,  order_entry_command_ring);}
                 }, order_entry);
             }
         }
+    };
 
     private:
     static  uint64_t                                      seq;

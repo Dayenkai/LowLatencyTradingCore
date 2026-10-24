@@ -7,8 +7,8 @@ struct   ClientOrder
 
     public:
     uint64_t    timestamp;
+    uint64_t    instrument_id;
     uint32_t    client_order_id;
-    uint32_t    instrument_id;
 };
 
 struct   AddOrder : public ClientOrder
@@ -33,6 +33,16 @@ struct ExecuteOrder : public ClientOrder
 struct DeleteOrder : public ClientOrder
 {
     uint32_t    quantity;
+};
+
+struct OrderConfirmation 
+{
+    uint64_t timestamp;
+    uint64_t exchangeOrderId;
+    uint32_t clientOrderId;
+    uint32_t quantity;
+    int32_t price;
+    OrderState state;
 };
 
 

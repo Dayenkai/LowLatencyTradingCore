@@ -24,7 +24,7 @@ namespace   exchange_engine
     constexpr int  PACKET_NB                  = 4096;
 
     constexpr int  BAND_SIZE                   = 10960000;       
-    constexpr int  BITMAP_SIZE           =      171250;     
+    constexpr int  BITMAP_SIZE                 = 171250;     
     constexpr int  BASE_SELLING_TICK       = 10000;    
     constexpr int  BASE_BUYING_TICK      = 3000000;
     
@@ -58,6 +58,12 @@ enum class OrderKind : uint8_t
 {
     GTC = 0, LimitIOC = 1, MarketOrder = 2, LimitFOK = 3, MarketFOK = 4
 };
+
+enum class OrderState : uint8_t
+{
+    Accepted = 0, Refused = 1
+};
+
 
 inline constexpr
 //MarketDataFormat Columns {Pos,Length}

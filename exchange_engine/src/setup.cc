@@ -6,6 +6,7 @@
 
 int setup(int &argc, char **argv)
 {
+    std::cout << "Preloading Kinshasa Stock Exchange...\n";
     std::unique_ptr<Exchange>                               exchange;
     std::unique_ptr<SessionGateway>                         order_entry_gateway = std::make_unique<SessionGateway>();
 
@@ -24,10 +25,11 @@ int setup(int &argc, char **argv)
     std::jthread    session_gateway(&SessionGateway::ListenOrderEntryTCP, order_entry_gateway.get(), std::ref(exchange->getCommandRing()));
 
 
-    std::jthread    send_order_feedback_tcp(&SessionGateway::SendOrderFeedbackTCP, order_entry_gateway.get());
+    std::jthread    send_order_feedback_tcp(&SessionGateway::SendOrderFeedbackTCP, order_entry_gateway.get(), std::ref(exchange->getOrderFeedbackRing()));
     std::jthread    send_mkt_data(&SessionGateway::SendMarketDataUDP, order_entry_gateway.get());
 
     std::jthread    exchangeThread(&Exchange::run, exchange.get());
+
     //std::jthread    marketDataPublisher(MarketDataPublisher, std::ref(tx_inet_RingBuffer));
     return 0;
 }

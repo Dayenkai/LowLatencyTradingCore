@@ -22,7 +22,7 @@ class OrderBook
         };
 
         OrderBook();
-        void addOrder(const Msg &order);
+        std::optional<Order> addOrder(const Msg &order);
 
         //Create a Function that returns PRICE LVL of ASK(LVL2)
         //Create a Function that returns PRICE LVL of BID(LVL2)
@@ -50,5 +50,6 @@ class OrderBook
     alignas(64) std::map<uint32_t, uint32_t, std::greater<int>>                 out_of_band_bids;
     alignas(64) TopOfTheBook                                                    top_of_the_book_;
     alignas(64) std::unordered_map<uint64_t, Order>                             orders_ids;
+    alignas(64) uint64_t                                                        id_incremental;
 
 };

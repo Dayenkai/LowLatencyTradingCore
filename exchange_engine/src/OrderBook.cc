@@ -16,12 +16,19 @@ OrderBook::OrderBook()
     top_of_the_book_.best_bid = 0;
     top_of_the_book_.best_bid_qty = 0;
     top_of_the_book_.bid_out_of_band = false;
+
+    id_incremental = 1;
 }
 
-void OrderBook::addOrder(const Msg &order)
+std::optional<Order> OrderBook::addOrder(const Msg &order)
 {
     if (order.price_ > 0 && order.qty_ > 0)
     {
+        Order order;
+        order.setId(id_incremental).setType(order.event_type_).setSide(order.side_).setPrice(order.price_).setQty(order.qty_);
+        orders_ids[id_incremental] = order;
+        ++id_incremental;
+
         if (static_cast<Side>(order.side_) == Side::Buy)
         {
             if (order.price_ <= exchange_engine::BASE_BUYING_TICK)
@@ -38,7 +45,7 @@ void OrderBook::addOrder(const Msg &order)
                     top_of_the_book_.best_bid_qty = bid_orders[exchange_engine::BASE_BUYING_TICK - order.price_];
                     top_of_the_book_.bid_out_of_band = false;
                 }
-                return;
+                return order;
             }
             out_of_band_bids[order.price_] += order.qty_;
             if (order.price_ >= top_of_the_book_.best_bid)
@@ -62,7 +69,7 @@ void OrderBook::addOrder(const Msg &order)
                     top_of_the_book_.best_ask_qty = ask_orders[order.price_ - exchange_engine::BASE_SELLING_TICK];
                     top_of_the_book_.ask_out_of_band = false;
                 }
-                return;
+                return order;
             }
 
             out_of_band_asks[order.price_] += order.qty_;
@@ -74,7 +81,9 @@ void OrderBook::addOrder(const Msg &order)
                 
             }
         }
+        return order;
     }
+    return std::nullopt;
 }
 
 void                            OrderBook::cancelOrder(const Msg &order)

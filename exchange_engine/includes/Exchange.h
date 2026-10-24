@@ -89,24 +89,56 @@ class   Exchange
     //USE CASES FUNCTIONS
     virtual int     run()
     {
-        std::cout << "KSE - [Kinshasa Stock Exchange Running !]" << std::endl;
+        std::cout << "KSE - [Kinshasa Stock Exchange is open !]" << std::endl;
 
-        while (1)
+        while (true)
         {
             if (gate_match_engine_command_ring.tail != gate_match_engine_command_ring.head)
             {
-                uint64_t command_nb = gate_match_engine_command_ring.tail.load(std::memory_order_acquire);
-                // std::visit([](const auto &v){
+                auto tail_tmp = gate_match_engine_command_ring.tail.load();
+                size_t command_index = gate_match_engine_command_ring.tail.load(std::memory_order_acquire);
+                std::visit([&](auto order){
+                    using parser_type = std::decay_t<decltype(order)>;
 
-                // });
-                // switch(gate_match_engine_command_ring.command_content.[command_nb].type)
-                // {
-                //     case OrderType::AddOrder :
-                //     const OrderPool    &order_pool = gate_match_engine_command_ring.data[command_nb].command_content;
-                //     std::cout << "AddOrder : client_order_id(" << order_pool.add_order.client_order_id << "), instrument_id = (" << order_pool.add_order.instrument_id << "), price = (" << order_pool.add_order.price << "), quantity = (" << order_pool.add_order.quantity << "), ";
-                //     break;
-                // }
-                gate_match_engine_command_ring.tail.store(command_nb+1, std::memory_order_release);
+                    if constexpr(std::is_same_v<parser_type, AddOrder>)
+                    {
+
+                        Msg msg;
+                        std::optional<Order> book_order;
+                        msg.setId(order.client_order_id).setInstr(order.instrument_id).setPrice(order.price).setQty(order.quantity).setSide(static_cast<uint8_t>(order.side));
+                        book_order = orderBook_.addOrder(msg);
+                        std::cout << "Exchange has received message : ClientOrderId(" << msg.id_ << "), Instrument(" << msg.instr_ << "), Side(" << (static_cast<Side>(msg.side_) == Side::Buy ? "Buy" : "Sell") << "), Price(" << msg.price_ << "), Quantity(" << msg.qty_ << ")\n";
+                        if (((order_confirmation_command_ring.head + 1) & ExchangeInetConst::TX_RING_SIZE-1) != order_confirmation_command_ring.tail)
+                        {
+                            OrderConfirmation conf;
+                            const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now().time_since_epoch()).count();
+                            if (book_order.has_value())
+                            {
+                                conf.timestamp = timestamp;
+                                conf.exchangeOrderId = book_order->id_; 
+                                conf.clientOrderId = order.client_order_id;
+                                conf.quantity = order.quantity; 
+                                conf.price = order.price;
+                                conf.state = OrderState::Accepted;
+
+                                bool written = false;
+                                while (!written)
+                                {
+                                    if(((order_confirmation_command_ring.head + 1) & (ExchangeInetConst::TX_RING_SIZE - 1)) != order_confirmation_command_ring.tail)
+                                    {
+                                        auto head = order_confirmation_command_ring.head.load(std::memory_order_acquire);
+                                        order_confirmation_command_ring.command_content[head] = conf;
+                                        order_confirmation_command_ring.head.store((head+1)&(ExchangeInetConst::TX_RING_SIZE-1), std::memory_order_release);
+                                        written = true;
+                                    }
+                                }
+
+                            //conf.
+                            }
+                        }
+                    }
+                }, gate_match_engine_command_ring.command_content[command_index]);
+                gate_match_engine_command_ring.tail.store((tail_tmp+1)&(ExchangeInetConst::RX_RING_SIZE-1), std::memory_order_release);
             }
         }
         //feedHandler();
@@ -129,12 +161,19 @@ class   Exchange
     {
         return gate_match_engine_command_ring;
     }
+
+    RxRingBuffer<ExchangeInetConst::TX_RING_SIZE, OrderConfirmation>   &getOrderFeedbackRing()
+    {
+        return order_confirmation_command_ring;
+    }
+
     protected :
     OrderBook             orderBook_;
     ExchangeConfig        config_;
 
     RxRingBuffer<ExchangeInetConst::RX_RING_SIZE, AddOrder>   gate_match_engine_command_ring;
-    RxRingBuffer<ExchangeInetConst::TX_RING_SIZE, AddOrder>   order_confirmation_command_ring;
+    RxRingBuffer<ExchangeInetConst::TX_RING_SIZE, OrderConfirmation>   order_confirmation_command_ring;
+    int id_=0;
 
     Msg                   msg_;
     //FeedHandler
