@@ -7,12 +7,12 @@
 
 //Exchange Related
 #include "WireFormat.h"
-#include "OrderBook.h"
+#include "MatchingEngine.h"
 #include "Order.h"
 #include "Constants.h"
 #include <nlohmann/json.hpp>
 
-
+namespace OUCH{
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AddOrder,
                                    timestamp,
                                    client_order_id,
@@ -22,23 +22,11 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AddOrder,
                                    tif,
                                    side)
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(ExecuteOrder,
-                                   timestamp,
-                                   client_order_id,
-                                   instrument_id,
-                                   quantity,
-                                   type)
-
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(CancelOrder,
                                    timestamp,
                                    client_order_id,
                                    instrument_id)
-
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(DeleteOrder,
-                                   timestamp,
-                                   client_order_id,
-                                   instrument_id,
-                                   quantity)
+}
 
 
 
@@ -58,7 +46,7 @@ class   Exchange
 
     Exchange() = default;
 
-    void    printOrder(const AddOrder    &order)
+    void    printOrder(const OUCH::AddOrder    &order)
     {
         std::cout << order.client_order_id << ", " << order.price << ", " << order.quantity << ", " << order.timestamp << std::endl;
     }
@@ -100,13 +88,12 @@ class   Exchange
                 std::visit([&](auto order){
                     using parser_type = std::decay_t<decltype(order)>;
 
-                    if constexpr(std::is_same_v<parser_type, AddOrder>)
+                    if constexpr(std::is_same_v<parser_type, OUCH::AddOrder>)
                     {
-
                         Msg msg;
                         std::optional<Order> book_order;
                         msg.setId(order.client_order_id).setInstr(order.instrument_id).setPrice(order.price).setQty(order.quantity).setSide(static_cast<uint8_t>(order.side));
-                        book_order = orderBook_.addOrder(msg);
+                        book_order = matching_engine_.AmendOrderBook(msg);
                         std::cout << "Exchange has received message : ClientOrderId(" << msg.id_ << "), Instrument(" << msg.instr_ << "), Side(" << (static_cast<Side>(msg.side_) == Side::Buy ? "Buy" : "Sell") << "), Price(" << msg.price_ << "), Quantity(" << msg.qty_ << ")\n";
                         if (((order_confirmation_command_ring.head + 1) & ExchangeInetConst::TX_RING_SIZE-1) != order_confirmation_command_ring.tail)
                         {
@@ -115,9 +102,9 @@ class   Exchange
                             if (book_order.has_value())
                             {
                                 conf.timestamp = timestamp;
-                                conf.exchangeOrderId = book_order->id_; 
+                                conf.exchangeOrderId = book_order->id_;
                                 conf.clientOrderId = order.client_order_id;
-                                conf.quantity = order.quantity; 
+                                conf.quantity = order.quantity;
                                 conf.price = order.price;
                                 conf.state = OrderState::Accepted;
 
@@ -132,13 +119,13 @@ class   Exchange
                                         written = true;
                                     }
                                 }
-
                             //conf.
                             }
                         }
                     }
                 }, gate_match_engine_command_ring.command_content[command_index]);
                 gate_match_engine_command_ring.tail.store((tail_tmp+1)&(ExchangeInetConst::RX_RING_SIZE-1), std::memory_order_release);
+                matching_engine_.matchingUpdate();
             }
         }
         //feedHandler();
@@ -157,7 +144,7 @@ class   Exchange
 
     //BUSINESS FUNCTIONS
 
-    RxRingBuffer<ExchangeInetConst::RX_RING_SIZE, AddOrder>   &getCommandRing()
+    RxRingBuffer<ExchangeInetConst::RX_RING_SIZE, public_OUCH_Messages>   &getCommandRing()
     {
         return gate_match_engine_command_ring;
     }
@@ -168,17 +155,18 @@ class   Exchange
     }
 
     protected :
-    OrderBook             orderBook_;
+    MatchingEngine        matching_engine_;
     ExchangeConfig        config_;
 
-    RxRingBuffer<ExchangeInetConst::RX_RING_SIZE, AddOrder>   gate_match_engine_command_ring;
-    RxRingBuffer<ExchangeInetConst::TX_RING_SIZE, OrderConfirmation>   order_confirmation_command_ring;
-    int id_=0;
+    RxRingBuffer<ExchangeInetConst::RX_RING_SIZE, public_OUCH_Messages>   gate_match_engine_command_ring;
+    RxRingBuffer<ExchangeInetConst::TX_RING_SIZE, OrderConfirmation>      order_confirmation_command_ring;
+    RxRingBuffer<ExchangeInetConst::TX_RING_SIZE, public_ITCH_Messages>   market_multicast_command_ring;
+    int id_= 0;
 
     Msg                   msg_;
     //FeedHandler
 
-};
+};  
 
 class   ExchangeScenario : public Exchange
 {
@@ -205,9 +193,9 @@ class   ExchangeScenario : public Exchange
         {
             if (orders[i]["type"] == "NEW")
             {
-                AddOrder order = orders[i].get<AddOrder>();
+                OUCH::AddOrder order = orders[i].get<OUCH::AddOrder>();
                 
-                orderBook_.addOrder(Msg());
+                //matching_engine_.AmendOrderBook(Msg());
                 typedef struct alignas(64) Msg
                 {
                     uint32_t                 _id;
@@ -219,13 +207,9 @@ class   ExchangeScenario : public Exchange
                     uint8_t                  _side;
                 }Msg;
             }
-            if (orders[i]["type"] == "DELETE")
-            {
-                DeleteOrder order = orders[i].get<DeleteOrder>();
-            }
             if (orders[i]["type"] == "CANCEL")
             {
-                CancelOrder order = orders[i].get<CancelOrder>();
+                OUCH::CancelOrder order = orders[i].get<OUCH::CancelOrder>();
             }
         }
         //printOrder(order);

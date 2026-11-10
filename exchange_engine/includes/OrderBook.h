@@ -29,7 +29,7 @@ class OrderBook
         //Create a Function that returns Details Order of ASK(LVL3)
         //Create a Function that returns Details Order of BID(LVL3)
 
-        void                            cancelOrder(const Msg &order);
+        std::optional<Order>            cancelOrder(const Msg &order);
         std::vector<uint32_t>           &getAskOrders();
         std::vector<uint32_t>           &getBidOrders();
         void                            matchingUpdate();
@@ -41,6 +41,7 @@ class OrderBook
     alignas(64) std::vector<uint32_t>                                           bid_orders;
     alignas(64) std::vector<uint32_t>                                           ask_orders;
 
+
     alignas(64) std::vector<PriceLevel>                                         price_lvl_order_ids;
 
     alignas(64) std::vector<uint64_t>                                           bitmapBids;
@@ -49,7 +50,10 @@ class OrderBook
     alignas(64) std::map<uint32_t, uint32_t>                                    out_of_band_asks;
     alignas(64) std::map<uint32_t, uint32_t, std::greater<int>>                 out_of_band_bids;
     alignas(64) TopOfTheBook                                                    top_of_the_book_;
-    alignas(64) std::unordered_map<uint64_t, Order>                             orders_ids;
+
+    alignas(64) std::map<uint64_t, std::forward_list<std::pair<uint32_t, Order>>, std::greater<uint64_t>>   bids_orders_ids;
+    alignas(64) std::map<uint64_t, std::forward_list<std::pair<uint32_t, Order>>>                           asks_orders_ids;
+
     alignas(64) uint64_t                                                        id_incremental;
 
 };

@@ -1,4 +1,5 @@
 #include "OrderBook.h"
+#include "CppStandard.h"
 
 OrderBook::OrderBook()
 {
@@ -26,7 +27,7 @@ std::optional<Order> OrderBook::addOrder(const Msg &order)
     {
         Order order;
         order.setId(id_incremental).setType(order.event_type_).setSide(order.side_).setPrice(order.price_).setQty(order.qty_);
-        orders_ids[id_incremental] = order;
+        //orders_ids[id_incremental] = order;
         ++id_incremental;
 
         if (static_cast<Side>(order.side_) == Side::Buy)
@@ -86,8 +87,9 @@ std::optional<Order> OrderBook::addOrder(const Msg &order)
     return std::nullopt;
 }
 
-void                            OrderBook::cancelOrder(const Msg &order)
+std::optional<Order>             OrderBook::cancelOrder(const Msg &order)
 {
+    return std::nullopt;
 }
 
 void    OrderBook::findTopOfTheBook(const Side& side, const std::vector<uint64_t>& bitmap, const uint64_t &&index)

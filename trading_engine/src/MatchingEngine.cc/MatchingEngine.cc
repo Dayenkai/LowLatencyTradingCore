@@ -26,7 +26,6 @@ class   MatchingEngine
             case static_cast<uint32_t>(Order_Type::CANCEL) :
             order_book_.cancelOrder(order);
             break;
-
         }
         
 
@@ -44,5 +43,5 @@ class   MatchingEngine
 
     private:
     OrderBook   &order_book_;
-    //Can includes Parameters for the Matchnig Engine
+    //Can includes Parameters for the Matching Engine
 };

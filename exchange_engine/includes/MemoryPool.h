@@ -153,4 +153,6 @@ typedef struct alignas(64) MemoryPool
     uint8_t                                                                arena[exchange_engine::PACKET_NB][exchange_engine::BUFFER_SIZE];
 }MemoryPool;
 
+//USE A STD::MAP FOR THE MOMENT, AND THEN MEMORYPOOL ORDER IDS FOR MORE COMPLEX MEMORY MANAGMENT
+
 #endif

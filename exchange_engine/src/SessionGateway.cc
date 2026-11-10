@@ -11,7 +11,7 @@ uint64_t SessionGateway::seq = 0;
 //     std::memcpy()
 // }
 
-int SessionGateway::ListenOrderEntryTCP(RxRingBuffer<ExchangeInetConst::RX_RING_SIZE, AddOrder> &order_entry_command_ring)
+int SessionGateway::ListenOrderEntryTCP(RxRingBuffer<ExchangeInetConst::RX_RING_SIZE, public_OUCH_Messages> &order_entry_command_ring)
 {
     //std::cout << "IN " << __func__ << std::endl;
     int listen_fd = socket(AF_INET, SOCK_STREAM, 0);
