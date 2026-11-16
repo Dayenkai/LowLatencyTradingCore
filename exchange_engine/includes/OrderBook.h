@@ -21,6 +21,22 @@ class OrderBook
             uint32_t                                     priority = 0;
         };
 
+        struct      EventsRecord
+        {
+            EventsRecord() : event_head(0), event_tail(0), buffering(false), size(0)
+            {
+                
+            }
+            alignas(64) std::array<std::variant<UDPMulticastEvent>, exchange_engine::MAX_EVENT_PER_TRANSM>  events_ring;
+            uint8_t event_head;
+            uint8_t event_tail;
+            uint8_t size;//We get to have a size because we don't want to rely on branching 
+            //to get the accurate size of the current active elements in the events_ring, that could cause misprediction cases from CPU
+            bool    buffering;
+            /* data */
+        };
+        
+
         OrderBook();
         std::optional<Order> addOrder(const Msg &order);
 
@@ -36,24 +52,41 @@ class OrderBook
         void                            findTopOfTheBook(const Side& side, const std::vector<uint64_t>& bitmap, const uint64_t &&index);
         void                            ListOrder(const Side &side);
         TopOfTheBook&                   topOfTheBook();
+        EventsRecord&                   getEventsRecord();
+
+        //Computational Purposes
+        inline uint32_t                 normalizeBidPrice(const uint32_t &price) const;
+        inline uint32_t                 normalizeAskPrice(const uint32_t &price) const;
+        inline uint32_t                 normalizePrice(const uint32_t &price, const Side &side) const;
+        inline uint32_t                 normalizePrice(const uint32_t &price, const uint32_t &price_reference, const Side &side) const;
 
     private:
-    alignas(64) std::vector<uint32_t>                                           bid_orders;
-    alignas(64) std::vector<uint32_t>                                           ask_orders;
-
-
-    alignas(64) std::vector<PriceLevel>                                         price_lvl_order_ids;
-
-    alignas(64) std::vector<uint64_t>                                           bitmapBids;
-    alignas(64) std::vector<uint64_t>                                           bitmapAsks;
-
-    alignas(64) std::map<uint32_t, uint32_t>                                    out_of_band_asks;
-    alignas(64) std::map<uint32_t, uint32_t, std::greater<int>>                 out_of_band_bids;
+    
+    //LVL1 OrderBook
     alignas(64) TopOfTheBook                                                    top_of_the_book_;
 
-    alignas(64) std::map<uint64_t, std::forward_list<std::pair<uint32_t, Order>>, std::greater<uint64_t>>   bids_orders_ids;
-    alignas(64) std::map<uint64_t, std::forward_list<std::pair<uint32_t, Order>>>                           asks_orders_ids;
+    //LVL2 OrderBook
+    alignas(64) std::vector<uint32_t>                                  bid_orders;
+    alignas(64) std::vector<uint32_t>                                  ask_orders;
 
-    alignas(64) uint64_t                                                        id_incremental;
+    alignas(64) std::vector<uint64_t>                                  bitmapBids;
+    alignas(64) std::vector<uint64_t>                                  bitmapAsks;
+
+    alignas(64) std::map<uint32_t, uint32_t>                           out_of_band_asks;
+    alignas(64) std::map<uint32_t, uint32_t, std::greater<int>>        out_of_band_bids;
+
+    
+
+    //LVL3 OrderBook
+    alignas(64) std::map<uint64_t, std::forward_list<uint32_t>, 
+                        std::greater<uint64_t>>                        lvl3_bid_orders;
+    alignas(64) std::map<uint64_t, std::forward_list<uint32_t>>        lvl3_ask_orders;
+
+    //Client Orders - Authoritative Clients Orders
+    alignas(64) std::unordered_map<uint64_t, Order>                    clients_orders;
+
+    EventsRecord                                                       events_record;
+
+    alignas(64) uint64_t                                               id_incremental;
 
 };

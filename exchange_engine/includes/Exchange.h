@@ -10,7 +10,9 @@
 #include "MatchingEngine.h"
 #include "Order.h"
 #include "Constants.h"
+#include "Utils.h"
 #include <nlohmann/json.hpp>
+
 
 namespace OUCH{
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AddOrder,
@@ -50,6 +52,7 @@ class   Exchange
     {
         std::cout << order.client_order_id << ", " << order.price << ", " << order.quantity << ", " << order.timestamp << std::endl;
     }
+
 
     // void    Parse()
     // {
@@ -92,9 +95,10 @@ class   Exchange
                     {
                         Msg msg;
                         std::optional<Order> book_order;
-                        msg.setId(order.client_order_id).setInstr(order.instrument_id).setPrice(order.price).setQty(order.quantity).setSide(static_cast<uint8_t>(order.side));
+                        msg.setId(order.client_order_id).setInstr(order.instrument_id).setPrice(order.price).setQty(order.quantity).setSide(order.side).setStatus(OrderStatus::Accepted);
                         book_order = matching_engine_.AmendOrderBook(msg);
-                        std::cout << "Exchange has received message : ClientOrderId(" << msg.id_ << "), Instrument(" << msg.instr_ << "), Side(" << (static_cast<Side>(msg.side_) == Side::Buy ? "Buy" : "Sell") << "), Price(" << msg.price_ << "), Quantity(" << msg.qty_ << ")\n";
+                        std::cout << "Side = " << static_cast<uint8_t>(order.side) << std::endl;;
+                        std::cout << "Exchange has received message : ClientOrderId(" << msg.id_ << "), Instrument(" << msg.instr_ << "), Side(" << (order.side == Side::Buy ? "Buy" : "Sell") << "), Price(" << msg.price_ << "), Quantity(" << msg.qty_ << ")\n";
                         if (((order_confirmation_command_ring.head + 1) & ExchangeInetConst::TX_RING_SIZE-1) != order_confirmation_command_ring.tail)
                         {
                             OrderConfirmation conf;
@@ -103,29 +107,43 @@ class   Exchange
                             {
                                 conf.timestamp = timestamp;
                                 conf.exchangeOrderId = book_order->id_;
-                                conf.clientOrderId = order.client_order_id;
-                                conf.quantity = order.quantity;
-                                conf.price = order.price;
-                                conf.state = OrderState::Accepted;
+                                conf.clientOrderId = msg.id_;
+                                conf.quantity = msg.qty_;
+                                conf.price = msg.price_;
+                                conf.state = msg.status_;
 
-                                bool written = false;
-                                while (!written)
-                                {
-                                    if(((order_confirmation_command_ring.head + 1) & (ExchangeInetConst::TX_RING_SIZE - 1)) != order_confirmation_command_ring.tail)
-                                    {
-                                        auto head = order_confirmation_command_ring.head.load(std::memory_order_acquire);
-                                        order_confirmation_command_ring.command_content[head] = conf;
-                                        order_confirmation_command_ring.head.store((head+1)&(ExchangeInetConst::TX_RING_SIZE-1), std::memory_order_release);
-                                        written = true;
-                                    }
-                                }
+                                writeToExternalRing(order_confirmation_command_ring, conf);
+                                // bool written = false;
+                                // while (!written)
+                                // {
+                                //     if(((order_confirmation_command_ring.head + 1) & (ExchangeInetConst::TX_RING_SIZE - 1)) != order_confirmation_command_ring.tail)
+                                //     {
+                                //         auto head = order_confirmation_command_ring.head.load(std::memory_order_acquire);
+                                //         order_confirmation_command_ring.command_content[head] = conf;
+                                //         order_confirmation_command_ring.head.store((head+1)&(ExchangeInetConst::TX_RING_SIZE-1), std::memory_order_release);
+                                //         written = true;
+                                //     }
+                                // }
                             //conf.
                             }
                         }
                     }
                 }, gate_match_engine_command_ring.command_content[command_index]);
                 gate_match_engine_command_ring.tail.store((tail_tmp+1)&(ExchangeInetConst::RX_RING_SIZE-1), std::memory_order_release);
-                matching_engine_.matchingUpdate();
+                OrderBook::EventsRecord &record = matching_engine_.matchingUpdate(market_multicast_command_ring);
+                while (record.buffering)
+                {
+                    OrderBook::EventsRecord &record = matching_engine_.matchingUpdate(market_multicast_command_ring);
+                }
+                if (record.event_tail != record.event_head)
+                {
+                    for (record.event_tail; record.event_tail != record.event_head; (record.event_tail+1)&(record.size-1))
+                    {
+                        writeToExternalRing(market_multicast_command_ring, record.events_ring[record.event_tail]);
+                    }
+                    //We send Event to UDP Multicast Session Gateway
+                }
+                //matchingUpdate DOes not work for the moment.
             }
         }
         //feedHandler();
@@ -160,7 +178,8 @@ class   Exchange
 
     RxRingBuffer<ExchangeInetConst::RX_RING_SIZE, public_OUCH_Messages>   gate_match_engine_command_ring;
     RxRingBuffer<ExchangeInetConst::TX_RING_SIZE, OrderConfirmation>      order_confirmation_command_ring;
-    RxRingBuffer<ExchangeInetConst::TX_RING_SIZE, public_ITCH_Messages>   market_multicast_command_ring;
+    RxRingBuffer<ExchangeInetConst::TX_RING_SIZE, UDPMulticastEvent>      market_multicast_command_ring;
+    //Change RX to TXRingBuffer for containers that aimed to send data outwards.
     int id_= 0;
 
     Msg                   msg_;

@@ -234,7 +234,7 @@ int SessionGateway::SendOrderFeedbackTCP(RxRingBuffer<ExchangeInetConst::TX_RING
                 {
                     std::stringstream   ss;
 
-                    ss << "Order:clientId(" << order_confirmation.clientOrderId << ")" << ",exchangeId("<<order_confirmation.exchangeOrderId<<"),price("<<order_confirmation.price<<"),quantity("<<order_confirmation.quantity<<"),State("<< (order_confirmation.state == OrderState::Accepted ? "Accepted" : "Declined") << ")\n";
+                    ss << "Order:clientId(" << order_confirmation.clientOrderId << ")" << ",exchangeId("<<order_confirmation.exchangeOrderId<<"),price("<<order_confirmation.price<<"),quantity("<<order_confirmation.quantity<<"),State("<< (order_confirmation.state == OrderStatus::Accepted ? "Accepted" : "Declined") << ")\n";
                     order += ss.str();
                 }
             }, order_feedback_ring.command_content[command_index]);

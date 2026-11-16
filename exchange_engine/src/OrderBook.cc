@@ -18,6 +18,9 @@ OrderBook::OrderBook()
     top_of_the_book_.best_bid_qty = 0;
     top_of_the_book_.bid_out_of_band = false;
 
+    events_record.event_head = 0;
+    events_record.event_tail = 0;
+
     id_incremental = 1;
 }
 
@@ -26,24 +29,42 @@ std::optional<Order> OrderBook::addOrder(const Msg &order)
     if (order.price_ > 0 && order.qty_ > 0)
     {
         Order order;
-        order.setId(id_incremental).setType(order.event_type_).setSide(order.side_).setPrice(order.price_).setQty(order.qty_);
+        order.setId(id_incremental).setType(order.event_type_).setSide(order.side_).setPrice(order.price_).setQty(order.qty_).setStatus(order.status_);
+        clients_orders[id_incremental] = order;
         //orders_ids[id_incremental] = order;
         ++id_incremental;
 
+        uint32_t    standardized_price = normalizePrice(order.price_, order.side_);
+        {
+            auto it = lvl3_bid_orders[standardized_price].begin();
+            if (it == lvl3_bid_orders[standardized_price].end())
+            {
+                lvl3_bid_orders[standardized_price].push_front(order.id_);  
+            }
+            else
+            {
+                while (std::next(it, 1) != lvl3_bid_orders[standardized_price].end())
+                {
+                    std::advance(it, 1);
+                }
+                lvl3_bid_orders[standardized_price].insert_after(it, order.id_);
+            }
+        }
+
         if (static_cast<Side>(order.side_) == Side::Buy)
         {
-            if (order.price_ <= exchange_engine::BASE_BUYING_TICK)
+            if (order.price_ <= exchange_engine::BASE_BUYING_TICK)[[likely]]
             {
-                bid_orders[exchange_engine::BASE_BUYING_TICK - order.price_] += order.qty_;
-                bitmapBids[(exchange_engine::BASE_BUYING_TICK - order.price_)/64] |= 1ULL << (exchange_engine::BASE_BUYING_TICK - order.price_)%64;
+                bid_orders[standardized_price] += order.qty_;
+                bitmapBids[standardized_price/64] |= 1ULL << standardized_price%64;
 
                 if (order.price_ >= top_of_the_book_.best_bid)
                 {                        
                     //If Orders cancelled, Find Next Best Bid Ask
                     
-                    std::cout << "New Best Bid[" << order.price_ <<"," << bid_orders[exchange_engine::BASE_BUYING_TICK - order.price_] << "]" <<  std::endl;
+                    std::cout << "New Best Bid[" << order.price_ <<"," << bid_orders[standardized_price] << "]" <<  std::endl;
                     top_of_the_book_.best_bid = order.price_;//*-1+exchange_engine::BASE_BUYING_TICK
-                    top_of_the_book_.best_bid_qty = bid_orders[exchange_engine::BASE_BUYING_TICK - order.price_];
+                    top_of_the_book_.best_bid_qty = bid_orders[standardized_price];
                     top_of_the_book_.bid_out_of_band = false;
                 }
                 return order;
@@ -60,14 +81,14 @@ std::optional<Order> OrderBook::addOrder(const Msg &order)
         {
             if (order.price_ >= exchange_engine::BASE_SELLING_TICK && order.price_ <= exchange_engine::BAND_SIZE-1)
             {
-                ask_orders[order.price_ - exchange_engine::BASE_SELLING_TICK] += order.qty_;
-                bitmapAsks[(order.price_ - exchange_engine::BASE_SELLING_TICK)/64] |= 1ULL << (order.price_ - exchange_engine::BASE_SELLING_TICK)%64;
+                ask_orders[standardized_price] += order.qty_;
+                bitmapAsks[(standardized_price)/64] |= 1ULL << (standardized_price)%64;
                 //If first Ask entering the OrderBook, or ask being inferior to the best Ask
                 if (order.price_ <= top_of_the_book_.best_ask)
                 {
-                    std::cout << "New Best Ask[" << order.price_ <<"," << ask_orders[order.price_ - exchange_engine::BASE_SELLING_TICK] << "]" <<  std::endl;
+                    std::cout << "New Best Ask[" << order.price_ <<"," << ask_orders[standardized_price] << "]" <<  std::endl;
                     top_of_the_book_.best_ask = order.price_;//+exchange_engine::BASE_SELLING_TICK
-                    top_of_the_book_.best_ask_qty = ask_orders[order.price_ - exchange_engine::BASE_SELLING_TICK];
+                    top_of_the_book_.best_ask_qty = ask_orders[standardized_price];
                     top_of_the_book_.ask_out_of_band = false;
                 }
                 return order;
@@ -159,13 +180,13 @@ void    OrderBook::findTopOfTheBook(const Side& side, const std::vector<uint64_t
     }
 }
 
-void    OrderBook::ListOrder(const Side &side)
+void    OrderBook::ListOrder(const Side &side) 
 {
     auto listOrders = [&](std::vector<uint32_t>& lvlPrices)
     {
         auto bbt = static_cast<uint64_t>(exchange_engine::BASE_BUYING_TICK);
         auto bst = static_cast<uint64_t>(exchange_engine::BASE_SELLING_TICK);
-        double orderprice_ = 0.0f;
+        double orderprice = 0.0f;
         auto itOOBB = out_of_band_bids.begin();
         auto itOOBA = out_of_band_asks.begin();
         bool outOfBandPriority = false;
@@ -179,14 +200,14 @@ void    OrderBook::ListOrder(const Side &side)
                 {
                     if (itOOBB != out_of_band_bids.end() && itOOBB->first >= bbt - i) [[unlikely]]
                     {
-                        orderprice_ = static_cast<double>((itOOBB->first) / (double)10000);
+                        orderprice = static_cast<double>((itOOBB->first) / (double)10000);
                         itOOBB++;
                         outOfBandPriority = true;
                         qty = itOOBB->second;
                     }
                     else
                     {
-                        orderprice_ = static_cast<double>((bbt - i) / (double)10000);
+                        orderprice = static_cast<double>((bbt - i) / (double)10000);
                         qty = lvlPrices[i];
                     }
                 }
@@ -194,7 +215,7 @@ void    OrderBook::ListOrder(const Side &side)
                 {
                     if (itOOBA != out_of_band_bids.end() && itOOBA->first <= bst + i) [[unlikely]]
                     {
-                        orderprice_ = static_cast<double>((itOOBA->first) / (double)10000);
+                        orderprice = static_cast<double>((itOOBA->first) / (double)10000);
                         itOOBA++;
                         outOfBandPriority = true;
                         qty = itOOBB->second;
@@ -202,10 +223,10 @@ void    OrderBook::ListOrder(const Side &side)
                     else
                     {
                         qty = lvlPrices[i];
-                        orderprice_ = static_cast<double>((bst + i) / (double)10000);
+                        orderprice = static_cast<double>((bst + i) / (double)10000);
                     }
                 }
-                std::cout << "Lvl Order Price " << std::fixed << orderprice_ << " (index = " <<  (outOfBandPriority ? i-- : i) << ", Quantity : " << qty << std::endl; 
+                std::cout << "Lvl Order Price " << std::fixed << orderprice << " (index = " <<  (outOfBandPriority ? i-- : i) << ", Quantity : " << qty << std::endl; 
                 outOfBandPriority = false;
             }
         }
@@ -213,8 +234,8 @@ void    OrderBook::ListOrder(const Side &side)
         {
             for (itOOBB; itOOBB != out_of_band_bids.end(); itOOBB++)
             {
-                orderprice_ = static_cast<double>((itOOBB->first) / (double)10000);
-                std::cout << "Lvl Order Price " << std::fixed << orderprice_ << ", Quantity : " << itOOBB->second << std::endl; 
+                orderprice = static_cast<double>((itOOBB->first) / (double)10000);
+                std::cout << "Lvl Order Price " << std::fixed << orderprice << ", Quantity : " << itOOBB->second << std::endl; 
             }
 
         }
@@ -222,8 +243,8 @@ void    OrderBook::ListOrder(const Side &side)
         {
             for (itOOBA; itOOBA != out_of_band_asks.end(); itOOBA++)
             {
-                orderprice_ = static_cast<double>((itOOBA->first) / (double)10000);
-                std::cout << "Lvl Order Price " << std::fixed << orderprice_ << ", Quantity : " << itOOBA->second << std::endl; 
+                orderprice = static_cast<double>((itOOBA->first) / (double)10000);
+                std::cout << "Lvl Order Price " << std::fixed << orderprice << ", Quantity : " << itOOBA->second << std::endl; 
             }
         }
     };
@@ -259,6 +280,8 @@ void                    OrderBook::matchingUpdate()
 
     top_of_the_book_.best_ask_qty -= minQty;
     top_of_the_book_.best_bid_qty -= minQty;
+
+    //Update Client_orders
 
     if (top_of_the_book_.ask_out_of_band == false)
     {
@@ -321,6 +344,32 @@ void                    OrderBook::matchingUpdate()
 OrderBook::TopOfTheBook&   OrderBook::topOfTheBook()
 {
     return top_of_the_book_;
+}
+
+OrderBook::EventsRecord&  OrderBook::getEventsRecord()
+{
+    return events_record;
+}
+
+
+inline uint32_t   OrderBook::normalizeBidPrice(const uint32_t &price) const
+{
+    return exchange_engine::BASE_BUYING_TICK - price;
+}
+
+inline uint32_t   OrderBook::normalizeAskPrice(const uint32_t &price) const
+{
+    return price - exchange_engine::BASE_SELLING_TICK;
+}
+
+inline uint32_t   OrderBook::normalizePrice(const uint32_t &price, const Side &side) const
+{
+    return (side == Side::Buy ? exchange_engine::BASE_BUYING_TICK-price : price - exchange_engine::BASE_SELLING_TICK);
+}
+
+inline uint32_t   OrderBook::normalizePrice(const uint32_t &price, const uint32_t &price_reference, const Side &side) const
+{
+    return (side == Side::Buy ? price_reference-price : price - price_reference);
 }
 
 /*

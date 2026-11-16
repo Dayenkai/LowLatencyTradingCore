@@ -16,22 +16,24 @@ using   vector_golden_byte = std::vector<std::byte>;
 
 namespace   exchange_engine
 {
-    constexpr int  BUFFER_SIZE                = 4096;
-    constexpr int  RX_RING_SIZE               = 1024;
+    constexpr int  BUFFER_SIZE           = 4096;
+    constexpr int  RX_RING_SIZE          = 1024;
 
-    constexpr int  PACKET_ENTRY_SIZE          = 43;
-    constexpr int  BYTES_NB_PER_ENTRY         = 23;
-    constexpr int  PACKET_NB                  = 4096;
+    constexpr int  PACKET_ENTRY_SIZE     = 43;
+    constexpr int  BYTES_NB_PER_ENTRY    = 23;
+    constexpr int  PACKET_NB             = 4096;
 
-    constexpr int  BAND_SIZE                   = 10960000;       
-    constexpr int  BITMAP_SIZE                 = 171250;     
-    constexpr int  BASE_SELLING_TICK       = 10000;    
+    constexpr int  BAND_SIZE             = 10960000;       
+    constexpr int  BITMAP_SIZE           = 171250;     
+    constexpr int  BASE_SELLING_TICK     = 10000;    
     constexpr int  BASE_BUYING_TICK      = 3000000;
+
+    constexpr int  MAX_EVENT_PER_TRANSM = 100;
     
     enum class TimeInForce : uint8_t
     {
         GTC = 0
-    };
+    }; 
 }
 //MEMORY LAYOUT
 
@@ -46,7 +48,7 @@ enum class Order_Type : uint8_t
 
 enum class Side : uint8_t
 {
-    Buy = false, Sell = true
+    Buy = 0, Sell = 1
 };
 
 enum class OrderQtyKind : bool
@@ -59,9 +61,9 @@ enum class OrderKind : uint8_t
     GTC = 0, LimitIOC = 1, MarketOrder = 2, LimitFOK = 3, MarketFOK = 4
 };
 
-enum class OrderState : uint8_t
+enum class OrderStatus : uint8_t
 {
-    Accepted = 0, Refused = 1
+    Accepted = 0, Rejected = 1, Deleted = 2
 };
 
 

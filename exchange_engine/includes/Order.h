@@ -82,6 +82,7 @@ struct OrderDeleted : public ClientOrder
 
 #define public_OUCH_Feedback_Messages OUCH::OrderAdded, OUCH::OrderReplaced, OUCH::OrderCancelled, OUCH::OrderDeleted, OUCH::OrderRejected, OUCH::OrderExecuted
 #define public_OUCH_Messages OUCH::AddOrder, OUCH::ReplaceOrder, OUCH::CancelOrder
+#define UDPMulticastEvent ITCH::OrderAdded, ITCH::OrderReplaced, ITCH::OrderCancelled, ITCH::OrderDeleted, ITCH::OrderExecuted, ITCH::OrderExecutedWithPrice
 }
 
 
@@ -96,7 +97,7 @@ struct OrderConfirmation
     uint32_t clientOrderId;
     uint32_t quantity;
     int32_t price;
-    OrderState state;
+    OrderStatus state;
 };
 
 

@@ -199,9 +199,9 @@ class   SessionGateway
                                 {
                                     for (size_t  i = 0; i < TCPParsing::addOrderFieldlen[2]; i++)
                                     {
-                                        newOrder.side = static_cast<Side>(field[i]) ;
-                                        std::cout << "Side : [" << ((bool)newOrder.side == false ? "Sell]" : "Buy]") << "\n";
-                                    }                                    
+                                        newOrder.side = static_cast<Side>((char)field[i]-'0') ;
+                                    }
+                                    std::cout << "Side : [" << (newOrder.side == Side::Buy ? "Buy]" : "Ask]")  << "\n";
                                     parsing_cursor+= TCPParsing::addOrderFieldlen[2];
                                     inbound_data = inbound_data.subspan(TCPParsing::addOrderFieldlen[2]);
                                 }

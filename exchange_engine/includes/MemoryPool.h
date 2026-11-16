@@ -50,7 +50,9 @@ typedef struct alignas(64) Msg
     uint32_t                 qty_;
     uint8_t                  kind_;
     uint8_t                  event_type_;
-    uint8_t                  side_;
+    Side                     side_;
+    OrderStatus              status_;
+    
 
     Msg        &setId(uint32_t id)
     {
@@ -88,9 +90,15 @@ typedef struct alignas(64) Msg
         return *this;
     }
 
-    Msg        &setSide(uint8_t side)
+    Msg        &setSide(Side side)
     {
         side_ = side;
+        return *this;
+    }
+
+    Msg        &setStatus(OrderStatus status)
+    {
+        status_ = status;
         return *this;
     }
 
@@ -106,33 +114,39 @@ typedef struct alignas(64) Order
     {
     }
 
-    Order&  setId(uint16_t id)
+    Order&  setId(const uint16_t &id)
     {
         id_ = id;
         return *this;
     }
 
-    Order&  setPrice(uint32_t price)
+    Order&  setPrice(const uint32_t &price)
     {
         price_ = price;
         return *this;
     }
 
-    Order&  setQty(uint32_t qty)
+    Order&  setQty(const uint32_t &qty)
     {
         qty_ = qty;
         return *this;
     }
 
-    Order&  setSide(Side side)
+    Order&  setSide(const Side &side)
     {
         side_ = side;
         return *this;
     }
 
-    Order&  setType(Order_Type event_type)
+    Order&  setType(const Order_Type &event_type)
     {
         event_type_ = event_type;
+        return *this;
+    }
+
+    Order&  setStatus(const OrderStatus &status)
+    {
+        status_ = status;
         return *this;
     }
 
@@ -142,6 +156,7 @@ typedef struct alignas(64) Order
     Side            side_;
     Order_Type      event_type_;
     OrderQtyKind    kind_;
+    OrderStatus     status_;
 }Order;
 
 

@@ -107,7 +107,7 @@ struct OrderAccepted {
     uint64_t exchangeOrderId;
     uint32_t quantity;
     int64_t price;
-    OrderState state;
+    OrderStatus state;
 };
 
 
