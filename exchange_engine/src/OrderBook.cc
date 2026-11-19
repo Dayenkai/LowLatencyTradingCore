@@ -20,26 +20,29 @@ OrderBook::OrderBook()
 
     events_record.event_head = 0;
     events_record.event_tail = 0;
+    events_record.size       = 100;
 
     id_incremental = 1;
+
+    stock_locate_ = 1;
 }
 
 std::optional<Order> OrderBook::addOrder(const Msg &order)
 {
     if (order.price_ > 0 && order.qty_ > 0)
     {
-        Order order;
-        order.setId(id_incremental).setType(order.event_type_).setSide(order.side_).setPrice(order.price_).setQty(order.qty_).setStatus(order.status_);
-        clients_orders[id_incremental] = order;
+        Order new_order;
+        new_order.setId(id_incremental).setType(static_cast<Order_Type>(order.event_type_)).setSide(order.side_).setPrice(order.price_).setQty(order.qty_).setStatus(order.status_);
+        clients_orders[id_incremental] = new_order;
         //orders_ids[id_incremental] = order;
         ++id_incremental;
 
-        uint32_t    standardized_price = normalizePrice(order.price_, order.side_);
+        uint32_t    standardized_price = normalizePrice(new_order.price_, new_order.side_);
         {
             auto it = lvl3_bid_orders[standardized_price].begin();
             if (it == lvl3_bid_orders[standardized_price].end())
             {
-                lvl3_bid_orders[standardized_price].push_front(order.id_);  
+                lvl3_bid_orders[standardized_price].push_front(new_order.id_);  
             }
             else
             {
@@ -47,63 +50,78 @@ std::optional<Order> OrderBook::addOrder(const Msg &order)
                 {
                     std::advance(it, 1);
                 }
-                lvl3_bid_orders[standardized_price].insert_after(it, order.id_);
+                lvl3_bid_orders[standardized_price].insert_after(it, new_order.id_);
             }
         }
 
-        if (static_cast<Side>(order.side_) == Side::Buy)
+        if (static_cast<Side>(new_order.side_) == Side::Buy)
         {
-            if (order.price_ <= exchange_engine::BASE_BUYING_TICK)[[likely]]
+            if (new_order.price_ <= exchange_engine::BASE_BUYING_TICK)[[likely]]
             {
-                bid_orders[standardized_price] += order.qty_;
+                bid_orders[standardized_price] += new_order.qty_;
                 bitmapBids[standardized_price/64] |= 1ULL << standardized_price%64;
 
-                if (order.price_ >= top_of_the_book_.best_bid)
+                if (new_order.price_ >= top_of_the_book_.best_bid)
                 {                        
                     //If Orders cancelled, Find Next Best Bid Ask
                     
-                    std::cout << "New Best Bid[" << order.price_ <<"," << bid_orders[standardized_price] << "]" <<  std::endl;
-                    top_of_the_book_.best_bid = order.price_;//*-1+exchange_engine::BASE_BUYING_TICK
+                    std::cout << "New Best Bid[" << new_order.price_ <<"," << bid_orders[standardized_price] << "]" <<  std::endl;
+                    top_of_the_book_.best_bid = new_order.price_;//*-1+exchange_engine::BASE_BUYING_TICK
                     top_of_the_book_.best_bid_qty = bid_orders[standardized_price];
                     top_of_the_book_.bid_out_of_band = false;
                 }
-                return order;
+                const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now().time_since_epoch()).count();
+                events_record.events_ring[events_record.event_head] = ITCH::AddOrder(timestamp, stock_locate_, new_order.id_, new_order.price_, new_order.qty_, new_order.side_, 0);
+                events_record.event_head = (events_record.event_head+1)&(events_record.size-1);
+                
+                //OrderAdded(uint32_t timestamp, uint32_t stock_locate, uint32_t exchange_order_id, uint32_t price, uint32_t quantity, Side side, uint8_t tif);
+                
+                return new_order;
             }
-            out_of_band_bids[order.price_] += order.qty_;
-            if (order.price_ >= top_of_the_book_.best_bid)
+            out_of_band_bids[new_order.price_] += new_order.qty_;
+            if (new_order.price_ >= top_of_the_book_.best_bid)
             {
-                top_of_the_book_.best_bid = order.price_;
-                top_of_the_book_.best_bid_qty = out_of_band_bids[order.price_];
+                top_of_the_book_.best_bid = new_order.price_;
+                top_of_the_book_.best_bid_qty = out_of_band_bids[new_order.price_];
                 top_of_the_book_.bid_out_of_band = true;
             }
+            const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now().time_since_epoch()).count();
+            events_record.events_ring[events_record.event_head] = ITCH::AddOrder(timestamp, stock_locate_, new_order.id_, new_order.price_, new_order.qty_, new_order.side_, 0);
+            events_record.event_head = (events_record.event_head+1)&(events_record.size-1);
+            
         }
         else
         {
-            if (order.price_ >= exchange_engine::BASE_SELLING_TICK && order.price_ <= exchange_engine::BAND_SIZE-1)
+            if (new_order.price_ >= exchange_engine::BASE_SELLING_TICK && new_order.price_ <= exchange_engine::BAND_SIZE-1)
             {
-                ask_orders[standardized_price] += order.qty_;
+                ask_orders[standardized_price] += new_order.qty_;
                 bitmapAsks[(standardized_price)/64] |= 1ULL << (standardized_price)%64;
                 //If first Ask entering the OrderBook, or ask being inferior to the best Ask
-                if (order.price_ <= top_of_the_book_.best_ask)
+                if (new_order.price_ <= top_of_the_book_.best_ask)
                 {
-                    std::cout << "New Best Ask[" << order.price_ <<"," << ask_orders[standardized_price] << "]" <<  std::endl;
-                    top_of_the_book_.best_ask = order.price_;//+exchange_engine::BASE_SELLING_TICK
+                    std::cout << "New Best Ask[" << new_order.price_ <<"," << ask_orders[standardized_price] << "]" <<  std::endl;
+                    top_of_the_book_.best_ask = new_order.price_;//+exchange_engine::BASE_SELLING_TICK
                     top_of_the_book_.best_ask_qty = ask_orders[standardized_price];
                     top_of_the_book_.ask_out_of_band = false;
                 }
-                return order;
+                const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now().time_since_epoch()).count();
+                events_record.events_ring[events_record.event_head] = ITCH::AddOrder(timestamp, stock_locate_, new_order.id_, new_order.price_, new_order.qty_, new_order.side_, 0);
+                events_record.event_head = (events_record.event_head+1)&(events_record.size-1);
+                return new_order;
             }
 
-            out_of_band_asks[order.price_] += order.qty_;
-            if (order.price_ <= top_of_the_book_.best_ask)
+            out_of_band_asks[new_order.price_] += new_order.qty_;
+            if (new_order.price_ <= top_of_the_book_.best_ask)
             {
-                top_of_the_book_.best_ask = order.price_;//+exchange_engine::BASE_SELLING_TICK
-                top_of_the_book_.best_ask_qty = out_of_band_asks[order.price_];
+                top_of_the_book_.best_ask = new_order.price_;//+exchange_engine::BASE_SELLING_TICK
+                top_of_the_book_.best_ask_qty = out_of_band_asks[new_order.price_];
                 top_of_the_book_.ask_out_of_band = true;
-                
             }
+            const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now().time_since_epoch()).count();
+            events_record.events_ring[events_record.event_head] = ITCH::AddOrder(timestamp, stock_locate_, new_order.id_, new_order.price_, new_order.qty_, new_order.side_, 0);
+            events_record.event_head = (events_record.event_head+1)&(events_record.size-1);
         }
-        return order;
+        return new_order;
     }
     return std::nullopt;
 }

@@ -48,7 +48,7 @@ enum class Order_Type : uint8_t
 
 enum class Side : uint8_t
 {
-    Buy = 0, Sell = 1
+    Buy = 0, Sell = 1, Undefined = 2
 };
 
 enum class OrderQtyKind : bool

@@ -154,7 +154,7 @@ int SessionGateway::ListenOrderEntryTCP(RxRingBuffer<ExchangeInetConst::RX_RING_
     return 0;
 }
 
-int SessionGateway::SendMarketDataUDP()
+int SessionGateway::SendMarketDataUDP(RxRingBuffer<ExchangeInetConst::TX_RING_SIZE, UDPMulticastEvent> &market_multicast_events_ring)
 {
     //std::cout << "IN " << __func__ << std::endl;
     std::cout << "[Running Kinshasa Stock Exchange UDP Multicast on port 9001...]\n";
@@ -182,26 +182,47 @@ int SessionGateway::SendMarketDataUDP()
     std::string buffer;
     while (true)
     {
-        std::getline(std::cin, buffer);
-        const char* msg = buffer.c_str();
+        if (market_multicast_events_ring.tail != market_multicast_events_ring.head)
+        {
+            auto tail_tmp = market_multicast_events_ring.tail.load();
+            size_t command_index = market_multicast_events_ring.tail.load(std::memory_order_acquire);
+            std::visit([&](auto udp_event){
 
-        // 4. Send one UDP datagram
-        ssize_t sent = sendto(
-            sockfd,
-            msg,
-            std::strlen(msg),
-            0,
-            reinterpret_cast<sockaddr*>(&dest),
-            sizeof(dest)
-        );
+                using EventType = std::decay_t<decltype(udp_event)>;
 
-        if (sent < 0) {
-            perror("sendto");
-            close(sockfd);
-            return 1;
+                if constexpr (std::is_same_v<EventType, ITCH::AddOrder>)
+                {
+                    std::stringstream   ss;
+
+                    //Tracking Number Must be added in the udp message
+                    ss << "A" << udp_event.getStockLocate() << udp_event.getTimestamp() << udp_event.getExchangeOrderId() << (udp_event.getSide() == Side::Buy ? "0":"1") << udp_event.getQuantity() << udp_event.getPrice() << "\n";
+                    buffer += ss.str();
+                }
+            }, market_multicast_events_ring.command_content[command_index]);
+            market_multicast_events_ring.tail.store((tail_tmp+1) & (ExchangeInetConst::TX_RING_SIZE - 1) , std::memory_order_release);
+
+            const char* msg = buffer.c_str();
+
+            
+
+            // 4. Send one UDP datagram
+            ssize_t sent = sendto(
+                sockfd,
+                msg,
+                std::strlen(msg),
+                0,
+                reinterpret_cast<sockaddr*>(&dest),
+                sizeof(dest)
+            );
+
+            if (sent < 0) {
+                perror("sendto");
+                close(sockfd);
+                return 1;
+            }
+
+            std::cout << "Sent " << buffer << " - " << sent << " bytes[UDP]\n";
         }
-
-        std::cout << "Sent " << buffer << " - " << sent << " bytes[UDP]\n";
     }
 
     // 5. Release the socket kernel resource

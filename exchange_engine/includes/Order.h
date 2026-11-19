@@ -8,7 +8,6 @@ namespace OUCH{
 
 struct   ClientOrder
 {
-
     public:
     uint64_t    timestamp;
     uint64_t    instrument_id;
@@ -82,7 +81,6 @@ struct OrderDeleted : public ClientOrder
 
 #define public_OUCH_Feedback_Messages OUCH::OrderAdded, OUCH::OrderReplaced, OUCH::OrderCancelled, OUCH::OrderDeleted, OUCH::OrderRejected, OUCH::OrderExecuted
 #define public_OUCH_Messages OUCH::AddOrder, OUCH::ReplaceOrder, OUCH::CancelOrder
-#define UDPMulticastEvent ITCH::OrderAdded, ITCH::OrderReplaced, ITCH::OrderCancelled, ITCH::OrderDeleted, ITCH::OrderExecuted, ITCH::OrderExecutedWithPrice
 }
 
 
@@ -105,45 +103,137 @@ struct OrderConfirmation
 
 namespace ITCH
 {
-    struct  ClientOrder
+    struct  ITCHMessage
     {
-        uint64_t    timestamp;
-        uint32_t    exchange_order_id;
+        ITCHMessage() = delete;
+
+        ITCHMessage(uint64_t new_timestamp, uint32_t new_stock_locate, uint32_t new_exchange_order_id)
+        : creation_timestamp_(new_timestamp), exchange_order_id_(new_exchange_order_id), stock_locate_(new_stock_locate)
+        {}
+
+        inline const uint64_t &getTimestamp()
+        {
+            return creation_timestamp_;
+        }
+
+        inline const  uint32_t &getExchangeOrderId()
+        {
+            return exchange_order_id_;
+        }
+
+        inline const uint32_t &getStockLocate()
+        {
+            return stock_locate_;
+        }
+
+        protected:
+        uint64_t    creation_timestamp_;
+        uint32_t    exchange_order_id_;
+        uint32_t    stock_locate_;
+        
     };
 //E Message
 
-struct   OrderAdded : public ClientOrder
+struct   AddOrder : public ITCHMessage
 {
     public:
-    uint32_t    quantity;
-    uint32_t    price;
-    uint8_t     tif;
-    Side        side;
+    AddOrder() = delete;
+    AddOrder(uint32_t timestamp, uint32_t stock_locate, uint32_t exchange_order_id, uint32_t price, uint32_t quantity, Side side, uint8_t tif)
+    :   ITCHMessage(timestamp, stock_locate, exchange_order_id), quantity_(quantity), price_(price), tif_(tif_)
+
+    {
+    }
+
+    inline const uint32_t &getPrice()
+    {
+        return price_;
+    }
+
+    inline const uint32_t &getQuantity()
+    {
+        return quantity_;
+    }
+
+    inline const uint8_t &getTif()
+    {
+        return tif_;
+    }
+
+    inline const Side &getSide()
+    {
+        return side_;
+    }
+
+    private:
+    uint32_t    price_;
+    uint32_t    quantity_;
+    uint8_t     tif_;
+    Side        side_;
 };
 
 
 //'D' OUCH Message Type
-struct   OrderDeleted : public ClientOrder
+struct   OrderDeleted : public ITCHMessage
 {
 };
 
 //'X' OUCH Message Type
-struct   OrderCancelled : public ClientOrder
+struct   OrderCancelled : public ITCHMessage
 {
-    uint32_t    quantity;
+    OrderCancelled() = delete;
+    OrderCancelled(uint32_t timestamp, uint32_t stock_locate, uint32_t exchange_order_id, uint32_t quantity = 0)
+    :   ITCHMessage(timestamp, stock_locate, exchange_order_id), quantity_(quantity)
+
+    {
+    }
+
+    inline const uint32_t &getQuantity(uint32_t new_quantity)
+    {
+        return quantity_;
+    }
+
+    private:
+    uint32_t    quantity_;
 };
 
 //'U' OUCH Message Type
-struct   OrderReplaced : public ClientOrder
+struct   OrderReplaced : public ITCHMessage
 {
-    uint32_t    old_exchange_order_id;
-    uint32_t    new_exchange_order_id;
-    uint32_t    quantity;
-    uint32_t    price;
+    OrderReplaced() = default;
+    OrderReplaced(uint32_t timestamp, uint32_t stock_locate, uint32_t old_exchange_order_id, uint32_t new_exchange_order_id, uint32_t price = 0, uint32_t quantity = 0)
+    : ITCHMessage(timestamp, stock_locate, old_exchange_order_id), new_exchange_order_id_(new_exchange_order_id), price_(price), quantity_(quantity)
+    {
+    }
+
+    inline const uint32_t &getOldExchangeOrderId()
+    {
+        return old_exchange_order_id_;
+    }
+
+    inline const uint32_t &getNewExchangeOrderId()
+    {
+        return new_exchange_order_id_;
+    }
+
+    inline const uint32_t &getPrice()
+    {
+        return price_;
+    }
+
+    inline uint32_t &getQuantity()
+    {
+        return quantity_;
+    }
+
+    private:
+    uint32_t    old_exchange_order_id_;
+    uint32_t    new_exchange_order_id_;
+    uint32_t    quantity_;
+    uint32_t    price_;
 };
 
 //'E' OUCH message Type
-struct OrderExecuted : public ClientOrder
+struct OrderExecuted : public ITCHMessage
 {
     uint32_t    quantity;
     uint32_t    price;
@@ -151,7 +241,7 @@ struct OrderExecuted : public ClientOrder
 };
 
 //'C' OUCH message type
-struct OrderExecutedWithPrice : public ClientOrder
+struct OrderExecutedWithPrice : public ITCHMessage
 {
     uint32_t    quantity;
     uint32_t    price;
@@ -159,7 +249,7 @@ struct OrderExecutedWithPrice : public ClientOrder
 };
 
 //'P' OUCH message type
-struct HiddenOrderExecuted : public ClientOrder
+struct HiddenOrderExecuted : public ITCHMessage
 {
     uint32_t    quantity;
     uint32_t    price;
@@ -167,13 +257,13 @@ struct HiddenOrderExecuted : public ClientOrder
 };
 
 //'B' OUCH Broken Trade
-struct BrokenTrade : public ClientOrder
+struct BrokenTrade : public ITCHMessage
 {
     uint32_t    match_id;
 };
 
 //Non Cross Trade
-struct NonCrossTrade : public ClientOrder
+struct NonCrossTrade : public ITCHMessage
 {
     uint32_t    quantity;
     uint32_t    price;
@@ -187,7 +277,12 @@ struct AuctionReport
     uint32_t    price;
 };
 
-#define public_ITCH_Messages ITCH::OrderAdded, ITCH::OrderReplaced, ITCH::OrderCancelled, ITCH::OrderDeleted, ITCH::OrderExecuted, ITCH::OrderExecutedWithPrice
+#define UDPMulticastEvent std::monostate, ITCH::AddOrder, ITCH::OrderReplaced, ITCH::OrderCancelled, ITCH::OrderDeleted, ITCH::OrderExecuted, ITCH::OrderExecutedWithPrice
+
+// std::expected<std::variant<OrderAdded>, std::array<char,100>>  makeITCH(std::variant<OrderAdded>    &)
+// {
+
+// }
 
 }
 

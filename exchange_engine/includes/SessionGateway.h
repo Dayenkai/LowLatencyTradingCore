@@ -62,7 +62,7 @@ class   SessionGateway
     void    AssignSequence();
     
     int     ListenOrderEntryTCP(RxRingBuffer<ExchangeInetConst::RX_RING_SIZE, public_OUCH_Messages> &order_entry_command_ring);
-    int     SendMarketDataUDP();
+    int     SendMarketDataUDP(RxRingBuffer<ExchangeInetConst::TX_RING_SIZE, UDPMulticastEvent> &market_multicast_events_ring);
     int     SendOrderFeedbackTCP(RxRingBuffer<ExchangeInetConst::TX_RING_SIZE, OrderConfirmation> &order_entry_feedback_ring);
 
 
@@ -287,6 +287,7 @@ class   SessionGateway
                             {
                                 if ((((order_entry_command_ring.head + 1) & (exchange_engine::RX_RING_SIZE - 1)) != order_entry_command_ring.tail))
                                 {
+                                    std::cout << "New Order incoming !" << "\n";
                                     order_entry_command_ring.command_content[order_entry_command_ring.head] = newOrder;
                                     order_entry_command_ring.head.store((order_entry_command_ring.head+1) & (exchange_engine::RX_RING_SIZE - 1), std::memory_order_release);
                                     written = true;

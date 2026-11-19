@@ -1,3 +1,6 @@
+#ifndef CPP_STANDARD_H
+#define CPP_STANDARD_H
+
 //INPUT-OUTPUT
 #include <iostream>
 #include <fstream>
@@ -33,3 +36,11 @@ using TimePoint = Clock::time_point;
 
 //OPTIONAL
 #include <optional>
+
+//EXPECTED
+#include <expected>
+
+//VARIANT
+#include <variant>
+
+#endif

@@ -26,7 +26,7 @@ int setup(int &argc, char **argv)
 
 
     std::jthread    send_order_feedback_tcp(&SessionGateway::SendOrderFeedbackTCP, order_entry_gateway.get(), std::ref(exchange->getOrderFeedbackRing()));
-    std::jthread    send_mkt_data(&SessionGateway::SendMarketDataUDP, order_entry_gateway.get());
+    std::jthread    send_mkt_data(&SessionGateway::SendMarketDataUDP, order_entry_gateway.get(), std::ref(exchange->getMarketDataUDPEventsRing()));
 
     std::jthread    exchangeThread(&Exchange::run, exchange.get());
 

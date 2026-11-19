@@ -133,11 +133,11 @@ class   Exchange
                 OrderBook::EventsRecord &record = matching_engine_.matchingUpdate(market_multicast_command_ring);
                 while (record.buffering)
                 {
-                    OrderBook::EventsRecord &record = matching_engine_.matchingUpdate(market_multicast_command_ring);
+                    record = matching_engine_.matchingUpdate(market_multicast_command_ring);
                 }
                 if (record.event_tail != record.event_head)
                 {
-                    for (record.event_tail; record.event_tail != record.event_head; (record.event_tail+1)&(record.size-1))
+                    for (record.event_tail; record.event_tail != record.event_head; record.event_tail = (record.event_tail+1)&(record.size-1))
                     {
                         writeToExternalRing(market_multicast_command_ring, record.events_ring[record.event_tail]);
                     }
@@ -170,6 +170,11 @@ class   Exchange
     RxRingBuffer<ExchangeInetConst::TX_RING_SIZE, OrderConfirmation>   &getOrderFeedbackRing()
     {
         return order_confirmation_command_ring;
+    }
+
+    RxRingBuffer<ExchangeInetConst::TX_RING_SIZE, UDPMulticastEvent>   &getMarketDataUDPEventsRing()
+    {
+        return market_multicast_command_ring;
     }
 
     protected :
