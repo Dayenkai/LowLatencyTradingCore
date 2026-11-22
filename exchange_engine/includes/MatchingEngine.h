@@ -50,7 +50,6 @@ class   MatchingEngine
             {
                 for (event_tail; event_tail != event_head; event_tail = (event_tail+1)&(exchange_engine::MAX_EVENT_PER_TRANSM-1))
                 {
-                    std::cout << "WritingToExternalRing during Matchnig...\n";
                     writeToExternalRing(udp_gateway_events_ring, book.getEventsRecord().events_ring[event_tail]);
                 }
             }

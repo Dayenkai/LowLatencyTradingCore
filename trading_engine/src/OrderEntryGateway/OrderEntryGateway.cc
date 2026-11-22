@@ -152,11 +152,38 @@ int OrderEntryGateway::SendOrderTCP()
 
     std::cout << "Connected to KSE order-entry gateway\n";
 
+    std::string order;
+    order.reserve(100);
     while (true)
     {
-        std::string order;
-        std::getline(std::cin, order);
+        char        order_type;
+        std::cin >> order_type;
 
+        uint32_t    client_order_id = 0;
+        std::cin >> client_order_id;
+        uint16_t    stock_locate    = 0;
+        std::cin >> stock_locate;
+        uint16_t     side            = 0;
+        std::cin >> side;
+        uint32_t    quantity        = 0;
+        std::cin >> quantity;
+        uint32_t    price           = 0;
+        std::cin >> price;
+        uint32_t    tif             = 0;
+        std::cin >> tif;
+
+        std::stringstream   ss;
+
+        ss << order_type
+           << static_cast<unsigned char>(client_order_id ) << static_cast<unsigned char>(client_order_id >> CHAR_BIT ) << static_cast<unsigned char>(client_order_id >> 2 * CHAR_BIT ) << static_cast<unsigned char>(client_order_id >> 3 * CHAR_BIT ) 
+           << static_cast<unsigned char>(stock_locate ) << static_cast<unsigned char>(stock_locate >> CHAR_BIT )
+           << static_cast<unsigned char>(side)
+           << static_cast<unsigned char>(quantity) << static_cast<unsigned char>(quantity >> CHAR_BIT ) << static_cast<unsigned char>(quantity >> 2 * CHAR_BIT ) << static_cast<unsigned char>(quantity >> 3 * CHAR_BIT )
+           << static_cast<unsigned char>(price) << static_cast<unsigned char>(price >> CHAR_BIT ) << static_cast<unsigned char>(price >> 2 * CHAR_BIT ) << static_cast<unsigned char>(price >> 3 * CHAR_BIT )
+           << static_cast<unsigned char>(tif) ;
+        
+        order += ss.str();
+        std::cout << "Reconstructed ClientOrderId bytes are : " << static_cast<uint32_t>(static_cast<unsigned char>(order[8]) | static_cast<unsigned char>(order[9]) << CHAR_BIT | static_cast<unsigned char>(order[10]) << 2 * CHAR_BIT | static_cast<unsigned char>(order[11]) << 3 * CHAR_BIT) << "\n";
         if (order.empty())
             continue;
 
@@ -172,7 +199,7 @@ int OrderEntryGateway::SendOrderTCP()
             close(client_fd_);
             return 1;
         }
-
+        order = "";
         std::cout << "Sent " << sent << " bytes\n";
     }
 

@@ -20,7 +20,7 @@ OrderBook::OrderBook()
 
     events_record.event_head = 0;
     events_record.event_tail = 0;
-    events_record.size       = 100;
+    events_record.size       = exchange_engine::MAX_EVENT_PER_TRANSM;
 
     id_incremental = 1;
 

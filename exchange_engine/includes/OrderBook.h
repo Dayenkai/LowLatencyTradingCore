@@ -63,7 +63,7 @@ class OrderBook
     private:
     
     //LVL1 OrderBook
-    alignas(64) TopOfTheBook                                                    top_of_the_book_;
+    alignas(64) TopOfTheBook                                           top_of_the_book_;
 
     //LVL2 OrderBook
     alignas(64) std::vector<uint32_t>                                  bid_orders;

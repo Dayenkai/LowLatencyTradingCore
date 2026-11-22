@@ -20,11 +20,11 @@ namespace   TCPParsing
 {
     enum class AddOrder : uint8_t
     {
-        ClientOrderId = 0, InstrumentId = 4, Side = 12, Quantity = 13, Price = 17, TIF = 21
+        ClientOrderId = 0, InstrumentId = 4, Side = 6, Quantity = 7, Price = 11, TIF = 15
     };
     constexpr uint8_t addOrderFieldNb = 6;
-    constexpr uint8_t addOrderLength = 24;
-    inline std::array<size_t, addOrderFieldNb> addOrderFieldlen = {4,8,1,4,4,1};
+    constexpr uint8_t addOrderLength = 16;
+    inline std::array<size_t, addOrderFieldNb> addOrderFieldlen = {4,2,1,4,4,1};
 
 
     enum class ReplaceOrder : uint8_t
@@ -91,7 +91,7 @@ class   SessionGateway
                 newOrder.instrument_id = 0;
                 newOrder.price = 0;
                 newOrder.quantity = 0;
-                newOrder.side = Side::Sell;
+                newOrder.side = Side::Buy;
                 newOrder.tif = 0;
                 newOrder.timestamp = 0;
 
@@ -119,23 +119,23 @@ class   SessionGateway
                             else
                             {
                                 auto field = inbound_data.subspan(0, TCPParsing::addOrderFieldlen[0]);
-                                if (std::find_if(field.begin(), field.end(), [](std::byte c){return !std::isdigit(static_cast<char>(c));}) != field.end())
+                                uint32_t    new_client_order_id = 0;
+
+                                for (size_t  i = 0; i < TCPParsing::addOrderFieldlen[0]; i++)
                                 {
-                                    parsing_infos &= ~(static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::InProgress));//Don't ignore next parsing iteration
-                                    parsing_infos |= (static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::IgnoreContent));
-                                    parsing_cursor = 0;
-                                    std::cout << "[Error] : AddOrder contains non digit characters\n";
+                                    newOrder.client_order_id |= static_cast<uint32_t>(static_cast<unsigned char>(field[i])) << i * CHAR_BIT;
                                 }
-                                else
-                                {
-                                    for (size_t  i = 0; i < TCPParsing::addOrderFieldlen[0]; i++)
-                                    {
-                                        newOrder.client_order_id |= static_cast<uint32_t>(field[i]) << i * CHAR_BIT;
-                                    }
+                                // if (std::find_if(field.begin(), field.end(), [](std::byte c){return !std::isdigit(static_cast<char>(c));}) != field.end())
+                                // {
+                                //     parsing_infos &= ~(static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::InProgress));//Don't ignore next parsing iteration
+                                //     parsing_infos |= (static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::IgnoreContent));
+                                //     parsing_cursor = 0;
+                                //     std::cout << "[Error] : AddOrder contains non digit characters\n";
+                                // }
+                                
                                     std::cout << "ClientOrder_id : [" << newOrder.client_order_id << "]\n";
                                     parsing_cursor+= TCPParsing::addOrderFieldlen[0];
                                     inbound_data = inbound_data.subspan(TCPParsing::addOrderFieldlen[0]);
-                                }
                                 
                             }
                         }
@@ -154,23 +154,24 @@ class   SessionGateway
                             else
                             {
                                 auto field = inbound_data.subspan(0, TCPParsing::addOrderFieldlen[1]);
-                                if (std::find_if(field.begin(), field.end(), [](std::byte c){return !std::isdigit(static_cast<char>(c)) && !std::isalpha(static_cast<char>(c));}) != field.end())
+                                for (size_t  i = 0; i < TCPParsing::addOrderFieldlen[1]; i++)
                                 {
-                                    parsing_infos &= ~(static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::InProgress));//Don't ignore next parsing iteration
-                                    parsing_infos |= (static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::IgnoreContent));
-                                    parsing_cursor = 0;
-                                    std::cout << "[Error] : Instruemnt Id contains alphanumerical characters !\n";
+                                    newOrder.instrument_id |= (static_cast<uint16_t>(static_cast<unsigned char>(field[i])) << i * CHAR_BIT);
                                 }
-                                else
-                                {
-                                    for (size_t  i = 0; i < TCPParsing::addOrderFieldlen[1]; i++)
-                                    {
-                                        newOrder.instrument_id |= static_cast<uint64_t>(field[i]) << i * CHAR_BIT;
-                                    }                                    
-                                    std::cout << "Instrument_id : [" << newOrder.client_order_id << "]\n";
+
+                                // if (std::find_if(field.begin(), field.end(), [](std::byte c){return !std::isdigit(static_cast<char>(c)) && !std::isalpha(static_cast<char>(c));}) != field.end())
+                                // {
+                                //     parsing_infos &= ~(static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::InProgress));//Don't ignore next parsing iteration
+                                //     parsing_infos |= (static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::IgnoreContent));
+                                //     parsing_cursor = 0;
+                                //     std::cout << "[Error] : Instruemnt Id contains alphanumerical characters !\n";
+                                // }
+                                // else
+                                // {          
+                                    std::cout << "Instrument_id : [" << newOrder.instrument_id << "]\n";
                                     parsing_cursor+= TCPParsing::addOrderFieldlen[1];
                                     inbound_data = inbound_data.subspan(TCPParsing::addOrderFieldlen[1]);
-                                }
+                                //}
                             }
                         }
                         break;
@@ -188,19 +189,22 @@ class   SessionGateway
                             else
                             {
                                 auto field = inbound_data.subspan(0, TCPParsing::addOrderFieldlen[2]);
-                                if (std::find_if(field.begin(), field.end(), [](std::byte c){return char(c)-'0'!=0 && char(c)-'0'!=1;}) != field.end())
+                                for (size_t  i = 0; i < TCPParsing::addOrderFieldlen[2]; i++)
+                                {
+                                    std::cout << "Side in the loop is " << static_cast<int>(field[i]) << "\n";
+                                    newOrder.side = static_cast<Side>(field[i]) ;
+                                }
+                                if (newOrder.side != Side::Buy && 
+                                    newOrder.side != Side::Sell)
+                                //if (std::find_if(field.begin(), field.end(), [](std::byte c){return char(c)-'0'!=0 && char(c)-'0'!=1;}) != field.end())
                                 {
                                     parsing_infos &= ~(static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::InProgress));//Don't ignore next parsing iteration
                                     parsing_infos |= (static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::IgnoreContent));
                                     parsing_cursor = 0;
-                                    std::cout << "[Error] : Side is neither Ask or Bid. No 0 or 1 detected.\n";
+                                    std::cout << "[Error] : Side(" << static_cast<int>(newOrder.side) << ") is neither Ask or Bid. No 0 or 1 detected.\n";
                                 }
                                 else
-                                {
-                                    for (size_t  i = 0; i < TCPParsing::addOrderFieldlen[2]; i++)
-                                    {
-                                        newOrder.side = static_cast<Side>((char)field[i]-'0') ;
-                                    }
+                                {  
                                     std::cout << "Side : [" << (newOrder.side == Side::Buy ? "Buy]" : "Ask]")  << "\n";
                                     parsing_cursor+= TCPParsing::addOrderFieldlen[2];
                                     inbound_data = inbound_data.subspan(TCPParsing::addOrderFieldlen[2]);
@@ -224,23 +228,25 @@ class   SessionGateway
                             else
                             {
                                 auto field = inbound_data.subspan(0, TCPParsing::addOrderFieldlen[3]);
-                                if (std::find_if(field.begin(), field.end(), [](std::byte c){return !std::isdigit(static_cast<char>(c));}) != field.end())
+                                for (size_t  i = 0; i < TCPParsing::addOrderFieldlen[3]; i++)
                                 {
-                                    parsing_infos &= ~(static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::InProgress));//Don't ignore next parsing iteration
-                                    parsing_infos |= (static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::IgnoreContent));
-                                    parsing_cursor = 0;
-                                    std::cout << "[Error] : Quantity contains non digit characters.\n";
+                                    std::cerr << std::hex << std::to_integer<unsigned>(field[i]) << ' ';
+                                    newOrder.quantity |= static_cast<uint32_t>(static_cast<unsigned char>(field[i])) << i * CHAR_BIT;
                                 }
-                                else
-                                {
-                                    for (size_t  i = 0; i < TCPParsing::addOrderFieldlen[3]; i++)
-                                    {
-                                        newOrder.quantity |= static_cast<uint32_t>(field[i]) << i * CHAR_BIT;
-                                    }
-                                    std::cout << "Quantity : [" << newOrder.client_order_id << "]\n";
+                                std::cout << "\n";
+                                // if (std::find_if(field.begin(), field.end(), [](std::byte c){return !std::isdigit(static_cast<char>(c));}) != field.end())
+                                // {
+                                //     parsing_infos &= ~(static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::InProgress));//Don't ignore next parsing iteration
+                                //     parsing_infos |= (static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::IgnoreContent));
+                                //     parsing_cursor = 0;
+                                //     std::cout << "[Error] : Quantity contains non digit characters.\n";
+                                // }
+                                // else
+                                // {
+                                    std::cout << "Quantity : [" << newOrder.quantity << "]\n";
                                     parsing_cursor+= TCPParsing::addOrderFieldlen[3];
                                     inbound_data = inbound_data.subspan(TCPParsing::addOrderFieldlen[3]);
-                                }
+                                //}
                             }
                         }
                         break;
@@ -258,23 +264,25 @@ class   SessionGateway
                             else
                             {
                                 auto field = inbound_data.subspan(0, TCPParsing::addOrderFieldlen[4]);
-                                if (std::find_if(field.begin(), field.end(), [](std::byte c){return !std::isdigit(static_cast<char>(c));}) != field.end())
+                                for (size_t  i = 0; i < TCPParsing::addOrderFieldlen[4]; i++)
                                 {
-                                    parsing_infos &= ~(static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::InProgress));//Don't ignore next parsing iteration
-                                    parsing_infos |= (static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::IgnoreContent));
-                                    parsing_cursor = 0;
-                                    std::cout << "[Error] : Price contains non digit characters.\n";
+                                    std::cerr << std::hex << std::to_integer<unsigned>(field[i]) << ' ';
+                                    newOrder.price |= static_cast<uint32_t>(static_cast<unsigned char>(field[i])) << i * CHAR_BIT;
                                 }
-                                else
-                                {
-                                    for (size_t  i = 0; i < TCPParsing::addOrderFieldlen[4]; i++)
-                                    {
-                                        newOrder.price |= static_cast<uint32_t>(field[i]) << i * CHAR_BIT;
-                                    }
-                                    std::cout << "Price : [" << newOrder.client_order_id << "]\n";
+                                std::cout << "\n";
+                                // if (std::find_if(field.begin(), field.end(), [](std::byte c){return !std::isdigit(static_cast<char>(c));}) != field.end())
+                                // {
+                                //     parsing_infos &= ~(static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::InProgress));//Don't ignore next parsing iteration
+                                //     parsing_infos |= (static_cast<int>(1) << static_cast<uint8_t>(ParsingContext::IgnoreContent));
+                                //     parsing_cursor = 0;
+                                //     std::cout << "[Error] : Price contains non digit characters.\n";
+                                // }
+                                // else
+                                // {
+                                    std::cout << "Price : [" << newOrder.price << "]\n";
                                     parsing_cursor+= TCPParsing::addOrderFieldlen[4];
                                     inbound_data = inbound_data.subspan(TCPParsing::addOrderFieldlen[4]);
-                                }
+                                //}
                             }
                         }
                         break;

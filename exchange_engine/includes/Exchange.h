@@ -95,6 +95,7 @@ class   Exchange
                     {
                         Msg msg;
                         std::optional<Order> book_order;
+                        std::cout << "Quantity = " << order.quantity << " and price is " << order.price << "\n";
                         msg.setId(order.client_order_id).setInstr(order.instrument_id).setPrice(order.price).setQty(order.quantity).setSide(order.side).setStatus(OrderStatus::Accepted);
                         book_order = matching_engine_.AmendOrderBook(msg);
                         std::cout << "Side = " << static_cast<uint8_t>(order.side) << std::endl;;

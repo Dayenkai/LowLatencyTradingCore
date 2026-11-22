@@ -17,6 +17,14 @@ struct   ClientOrder
 //OUCH Client OrderEntry / Client -> Exchange
 struct   AddOrder : public ClientOrder
 {
+
+    AddOrder()
+    {
+        quantity = 0;
+        price = 0;
+        tif = 0;
+        side = static_cast<Side>(0);
+    }
     public:
     uint32_t    quantity;
     uint32_t    price;
@@ -138,8 +146,8 @@ struct   AddOrder : public ITCHMessage
 {
     public:
     AddOrder() = delete;
-    AddOrder(uint32_t timestamp, uint32_t stock_locate, uint32_t exchange_order_id, uint32_t price, uint32_t quantity, Side side, uint8_t tif)
-    :   ITCHMessage(timestamp, stock_locate, exchange_order_id), quantity_(quantity), price_(price), tif_(tif_)
+    AddOrder(uint64_t timestamp, uint32_t stock_locate, uint32_t exchange_order_id, uint32_t price, uint32_t quantity, Side side, uint8_t tif)
+    :   ITCHMessage(timestamp, stock_locate, exchange_order_id), price_(price), quantity_(quantity), side_(side), tif_(tif)
 
     {
     }
@@ -181,7 +189,7 @@ struct   OrderDeleted : public ITCHMessage
 struct   OrderCancelled : public ITCHMessage
 {
     OrderCancelled() = delete;
-    OrderCancelled(uint32_t timestamp, uint32_t stock_locate, uint32_t exchange_order_id, uint32_t quantity = 0)
+    OrderCancelled(uint64_t timestamp, uint32_t stock_locate, uint32_t exchange_order_id, uint32_t quantity = 0)
     :   ITCHMessage(timestamp, stock_locate, exchange_order_id), quantity_(quantity)
 
     {
@@ -200,7 +208,7 @@ struct   OrderCancelled : public ITCHMessage
 struct   OrderReplaced : public ITCHMessage
 {
     OrderReplaced() = default;
-    OrderReplaced(uint32_t timestamp, uint32_t stock_locate, uint32_t old_exchange_order_id, uint32_t new_exchange_order_id, uint32_t price = 0, uint32_t quantity = 0)
+    OrderReplaced(uint64_t timestamp, uint32_t stock_locate, uint32_t old_exchange_order_id, uint32_t new_exchange_order_id, uint32_t price = 0, uint32_t quantity = 0)
     : ITCHMessage(timestamp, stock_locate, old_exchange_order_id), new_exchange_order_id_(new_exchange_order_id), price_(price), quantity_(quantity)
     {
     }

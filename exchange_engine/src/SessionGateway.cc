@@ -180,6 +180,7 @@ int SessionGateway::SendMarketDataUDP(RxRingBuffer<ExchangeInetConst::TX_RING_SI
 
     // 3. Payload
     std::string buffer;
+    buffer.reserve(200);
     while (true)
     {
         if (market_multicast_events_ring.tail != market_multicast_events_ring.head)
@@ -222,6 +223,7 @@ int SessionGateway::SendMarketDataUDP(RxRingBuffer<ExchangeInetConst::TX_RING_SI
             }
 
             std::cout << "Sent " << buffer << " - " << sent << " bytes[UDP]\n";
+            buffer.clear();
         }
     }
 
