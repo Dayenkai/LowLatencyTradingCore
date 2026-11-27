@@ -4,6 +4,7 @@
 #include "CppStandard.h"
 #include "MemoryPool.h"
 #include "PersonnalLibrary.h"
+#include "Order.h"
 
 
 class OrderBook

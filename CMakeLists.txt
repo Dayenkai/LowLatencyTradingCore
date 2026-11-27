@@ -6,7 +6,8 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(trading_engine trading_engine/src/main.cc trading_engine/src/MarketDataReceiver/MarketDataReceiver.cc trading_engine/src/PersonnalLibrary/OutputFunctions.cc trading_engine/src/FeedHandler/feedHandler.cc trading_engine/src/OrderEntryGateway/OrderEntryGateway.cc trading_engine/src/startTradingEngine.cc trading_engine/src/Trading_Engine/trading_engine.cc trading_engine/src/Utils/utils.cpp)
+add_executable(trading_engine trading_engine/src/main.cc trading_engine/src/MarketDataReceiver/MarketDataReceiver.cc trading_engine/src/PersonnalLibrary/OutputFunctions.cc trading_engine/src/FeedHandler/feedHandler.cc trading_engine/src/OrderEntryGateway/OrderEntryGateway.cc trading_engine/src/startTradingEngine.cc trading_engine/src/Trading_Engine/trading_engine.cc trading_engine/src/Utils/utils.cpp
+    trading_engine/includes/Order.h)
 add_executable(exchange_engine exchange_engine/src/main.cc exchange_engine/src/setup.cc exchange_engine/src/MarketDataPublisher.cc exchange_engine/src/OrderBook.cc exchange_engine/src/SessionGateway.cc ${CMAKE_CURRENT_SOURCE_DIR}/trading_engine/includes/CppStandard.h)
 add_executable(benchmark_tool benchmark/src/main.cc)
 

@@ -1,7 +1,7 @@
 #include "OrderBook.h"
 #include "CppStandard.h"
 
-OrderBook::OrderBook()
+OrderBook::OrderBook() : stock_symbol_({'A','A','P','L', '\0', '\0', '\0', '\0'})
 {
     bid_orders.resize(exchange_engine::BAND_SIZE);
     ask_orders.resize(exchange_engine::BAND_SIZE);
@@ -71,7 +71,8 @@ std::optional<Order> OrderBook::addOrder(const Msg &order)
                     top_of_the_book_.bid_out_of_band = false;
                 }
                 const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now().time_since_epoch()).count();
-                events_record.events_ring[events_record.event_head] = ITCH::AddOrder(timestamp, stock_locate_, new_order.id_, new_order.price_, new_order.qty_, new_order.side_, 0);
+                char *lol;
+                events_record.events_ring[events_record.event_head] = ITCH::AddOrder(timestamp, stock_locate_, stock_symbol_, new_order.id_, new_order.price_, new_order.qty_, new_order.side_, 0);
                 events_record.event_head = (events_record.event_head+1)&(events_record.size-1);
                 
                 //OrderAdded(uint32_t timestamp, uint32_t stock_locate, uint32_t exchange_order_id, uint32_t price, uint32_t quantity, Side side, uint8_t tif);
@@ -86,7 +87,7 @@ std::optional<Order> OrderBook::addOrder(const Msg &order)
                 top_of_the_book_.bid_out_of_band = true;
             }
             const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now().time_since_epoch()).count();
-            events_record.events_ring[events_record.event_head] = ITCH::AddOrder(timestamp, stock_locate_, new_order.id_, new_order.price_, new_order.qty_, new_order.side_, 0);
+            events_record.events_ring[events_record.event_head] = ITCH::AddOrder(timestamp, stock_locate_, stock_symbol_, new_order.id_, new_order.price_, new_order.qty_, new_order.side_, 0);
             events_record.event_head = (events_record.event_head+1)&(events_record.size-1);
             
         }
@@ -105,7 +106,7 @@ std::optional<Order> OrderBook::addOrder(const Msg &order)
                     top_of_the_book_.ask_out_of_band = false;
                 }
                 const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now().time_since_epoch()).count();
-                events_record.events_ring[events_record.event_head] = ITCH::AddOrder(timestamp, stock_locate_, new_order.id_, new_order.price_, new_order.qty_, new_order.side_, 0);
+                events_record.events_ring[events_record.event_head] = ITCH::AddOrder(timestamp, stock_locate_, stock_symbol_, new_order.id_, new_order.price_, new_order.qty_, new_order.side_, 0);
                 events_record.event_head = (events_record.event_head+1)&(events_record.size-1);
                 return new_order;
             }
@@ -118,7 +119,7 @@ std::optional<Order> OrderBook::addOrder(const Msg &order)
                 top_of_the_book_.ask_out_of_band = true;
             }
             const auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now().time_since_epoch()).count();
-            events_record.events_ring[events_record.event_head] = ITCH::AddOrder(timestamp, stock_locate_, new_order.id_, new_order.price_, new_order.qty_, new_order.side_, 0);
+            events_record.events_ring[events_record.event_head] = ITCH::AddOrder(timestamp, stock_locate_, stock_symbol_, new_order.id_, new_order.price_, new_order.qty_, new_order.side_, 0);
             events_record.event_head = (events_record.event_head+1)&(events_record.size-1);
         }
         return new_order;

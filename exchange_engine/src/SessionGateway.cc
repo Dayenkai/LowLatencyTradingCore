@@ -194,13 +194,29 @@ int SessionGateway::SendMarketDataUDP(RxRingBuffer<ExchangeInetConst::TX_RING_SI
                 if constexpr (std::is_same_v<EventType, ITCH::AddOrder>)
                 {
                     std::stringstream   ss;
-
+                    std::cout << "We are here !!!" << std::endl;
                     //Tracking Number Must be added in the udp message
-                    ss << "A" << udp_event.getStockLocate() << udp_event.getTimestamp() << udp_event.getExchangeOrderId() << (udp_event.getSide() == Side::Buy ? "0":"1") << udp_event.getQuantity() << udp_event.getPrice() << "\n";
+                    //A Add Order	ordertype(1), stock_locate(2), timestamps(8), Order Ref (4), Side (1), Shares or Qty (4), Stock Symbol (8), Price (4)
+                    char    event_type = 'A';
+                    seq++;
+                    byteEncoder(ss, 'A');
+                    byteEncoder(ss, udp_event.getStockLocate());
+                    byteEncoder(ss, seq);
+                    byteEncoder(ss, udp_event.getTimestamp());
+                    byteEncoder(ss, udp_event.getExchangeOrderId());
+                    byteEncoder(ss, udp_event.getSide());
+                    byteEncoder(ss, udp_event.getQuantity());
+                    for (int index = 0; index < udp_event.getStockSymbol().size(); index++)
+                    {
+                        byteEncoder(ss, udp_event.getStockSymbol()[index]);
+                    }
+                    byteEncoder(ss, udp_event.getPrice());
+
                     buffer += ss.str();
                 }
             }, market_multicast_events_ring.command_content[command_index]);
             market_multicast_events_ring.tail.store((tail_tmp+1) & (ExchangeInetConst::TX_RING_SIZE - 1) , std::memory_order_release);
+
 
             const char* msg = buffer.c_str();
 
@@ -210,7 +226,7 @@ int SessionGateway::SendMarketDataUDP(RxRingBuffer<ExchangeInetConst::TX_RING_SI
             ssize_t sent = sendto(
                 sockfd,
                 msg,
-                std::strlen(msg),
+                buffer.size(),
                 0,
                 reinterpret_cast<sockaddr*>(&dest),
                 sizeof(dest)
@@ -256,7 +272,7 @@ int SessionGateway::SendOrderFeedbackTCP(RxRingBuffer<ExchangeInetConst::TX_RING
                 if constexpr (std::is_same_v<OrderConfirmationType, OrderConfirmation>)
                 {
                     std::stringstream   ss;
-
+                    
                     ss << "Order:clientId(" << order_confirmation.clientOrderId << ")" << ",exchangeId("<<order_confirmation.exchangeOrderId<<"),price("<<order_confirmation.price<<"),quantity("<<order_confirmation.quantity<<"),State("<< (order_confirmation.state == OrderStatus::Accepted ? "Accepted" : "Declined") << ")\n";
                     order += ss.str();
                 }

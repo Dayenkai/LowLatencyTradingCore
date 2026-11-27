@@ -29,6 +29,8 @@ namespace   exchange_engine
     constexpr int  BASE_BUYING_TICK      = 3000000;
 
     constexpr int  MAX_EVENT_PER_TRANSM  = 128;
+
+    constexpr size_t STOCK_SYMBOL_LENGTH = 8;
     
     enum class TimeInForce : uint8_t
     {

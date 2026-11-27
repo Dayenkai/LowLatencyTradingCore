@@ -56,7 +56,8 @@ class   SessionGateway
     public:
     SessionGateway()
     {
-        client_fd_ = -1;//Initializing Sequence Assignment
+        client_fd_ = -1;
+        seq = 0;//Initializing Sequence Assignment
     }
 
     void    AssignSequence();
@@ -80,6 +81,34 @@ class   SessionGateway
     //         fillValueLe<uint32_t>(msg.qty_, reinterpret_cast<std::byte*>(desc.addr + dataOffsets[7]));
     //     }
     // }
+
+    
+    template<typename T>
+    void byteEncoder(std::stringstream   &ss, T value)
+    {
+
+        static_assert(std::is_integral_v<T> || std::is_enum_v<T>);
+        if constexpr (std::is_enum_v<T>)
+        {
+            auto raw_value = static_cast<std::underlying_type_t<T>>(value);
+
+            for (size_t i = 0; i < sizeof(T); i++)
+            {
+                auto   temp = static_cast<unsigned char>(raw_value >> i * CHAR_BIT);
+                ss.put(temp);
+            }
+        }
+        else if constexpr (std::is_integral_v<T>)
+        {
+            auto raw_value = static_cast<std::make_unsigned_t<T>>(value);
+
+            for (size_t i = 0; i < sizeof(T); i++)
+            {
+                auto   temp = static_cast<unsigned char>(raw_value >> i * CHAR_BIT);
+                ss.put(temp);
+            }
+        }        
+    }
 
     struct  PacketParser
     {

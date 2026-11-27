@@ -1,11 +1,11 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-
 namespace   trading_engine
 {
     constexpr int  BUFFER_SIZE                = 4096;
     constexpr int  RX_RING_SIZE               = 1024;
+    constexpr int  TX_RING_SIZE               = 1024;
 
     constexpr int  PACKET_ENTRY_SIZE          = 43;
     constexpr int  BYTES_NB_PER_ENTRY         = 23;
@@ -13,8 +13,11 @@ namespace   trading_engine
 
     constexpr int  BAND_SIZE                   = 10960000;       
     constexpr int  BITMAP_SIZE           =      171250;     
-    constexpr int  BASE_SELLING_TICK       = 10000;    
-    constexpr int  BASE_BUYING_TICK      = 3000000;      
+    constexpr int  BASE_SELLING_TICK     = 10000;    
+    constexpr int  BASE_BUYING_TICK      = 3000000;
+
+    constexpr size_t    STOCK_SYMBOL_LENGTH = 8;
+    
 }
 //MEMORY LAYOUT
 

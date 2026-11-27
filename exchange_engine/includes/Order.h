@@ -115,9 +115,10 @@ namespace ITCH
     {
         ITCHMessage() = delete;
 
-        ITCHMessage(uint64_t new_timestamp, uint32_t new_stock_locate, uint32_t new_exchange_order_id)
-        : creation_timestamp_(new_timestamp), exchange_order_id_(new_exchange_order_id), stock_locate_(new_stock_locate)
-        {}
+        ITCHMessage(uint64_t new_timestamp, uint32_t new_stock_locate, std::array<char, exchange_engine::STOCK_SYMBOL_LENGTH> stock_symbol, uint32_t new_exchange_order_id)
+        : creation_timestamp_(new_timestamp), stock_locate_(new_stock_locate), stock_symbol_(stock_symbol), exchange_order_id_(new_exchange_order_id)
+        {
+        }
 
         inline const uint64_t &getTimestamp()
         {
@@ -134,20 +135,27 @@ namespace ITCH
             return stock_locate_;
         }
 
+        inline std::array<char, exchange_engine::STOCK_SYMBOL_LENGTH> getStockSymbol()
+        {
+            return stock_symbol_;
+        }
+
         protected:
         uint64_t    creation_timestamp_;
         uint32_t    exchange_order_id_;
         uint32_t    stock_locate_;
+        std::array<char, exchange_engine::STOCK_SYMBOL_LENGTH>       stock_symbol_;
         
     };
 //E Message
 
+//'A' Message
 struct   AddOrder : public ITCHMessage
 {
     public:
     AddOrder() = delete;
-    AddOrder(uint64_t timestamp, uint32_t stock_locate, uint32_t exchange_order_id, uint32_t price, uint32_t quantity, Side side, uint8_t tif)
-    :   ITCHMessage(timestamp, stock_locate, exchange_order_id), price_(price), quantity_(quantity), side_(side), tif_(tif)
+    AddOrder(uint64_t timestamp, uint32_t stock_locate, std::array<char, exchange_engine::STOCK_SYMBOL_LENGTH> stock_symbol, uint32_t exchange_order_id, uint32_t price, uint32_t quantity, Side side, uint8_t tif)
+    :   ITCHMessage(timestamp, stock_locate, stock_symbol, exchange_order_id), price_(price), quantity_(quantity), side_(side), tif_(tif)
 
     {
     }
@@ -189,8 +197,8 @@ struct   OrderDeleted : public ITCHMessage
 struct   OrderCancelled : public ITCHMessage
 {
     OrderCancelled() = delete;
-    OrderCancelled(uint64_t timestamp, uint32_t stock_locate, uint32_t exchange_order_id, uint32_t quantity = 0)
-    :   ITCHMessage(timestamp, stock_locate, exchange_order_id), quantity_(quantity)
+    OrderCancelled(uint64_t timestamp, uint32_t stock_locate, std::array<char, exchange_engine::STOCK_SYMBOL_LENGTH> stock_symbol, uint32_t exchange_order_id, uint32_t quantity = 0)
+    :   ITCHMessage(timestamp, stock_locate, stock_symbol, exchange_order_id), quantity_(quantity)
 
     {
     }
@@ -204,12 +212,12 @@ struct   OrderCancelled : public ITCHMessage
     uint32_t    quantity_;
 };
 
-//'U' OUCH Message Type
+//'U' ITCH Message Type
 struct   OrderReplaced : public ITCHMessage
 {
     OrderReplaced() = default;
-    OrderReplaced(uint64_t timestamp, uint32_t stock_locate, uint32_t old_exchange_order_id, uint32_t new_exchange_order_id, uint32_t price = 0, uint32_t quantity = 0)
-    : ITCHMessage(timestamp, stock_locate, old_exchange_order_id), new_exchange_order_id_(new_exchange_order_id), price_(price), quantity_(quantity)
+    OrderReplaced(uint64_t timestamp, uint32_t stock_locate, std::array<char, exchange_engine::STOCK_SYMBOL_LENGTH> stock_symbol, uint32_t old_exchange_order_id, uint32_t new_exchange_order_id, uint32_t price = 0, uint32_t quantity = 0)
+    : ITCHMessage(timestamp, stock_locate, stock_symbol, old_exchange_order_id), new_exchange_order_id_(new_exchange_order_id), price_(price), quantity_(quantity)
     {
     }
 

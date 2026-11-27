@@ -30,7 +30,11 @@ class   TradingEngine
 
     //BUSINESS FUNCTIONS
 
-
+    
+    OrderEntryGateway   &getOrderEntryGateway()
+    {
+        return order_entry_gateway_;
+    }
 
     protected :
     alignas(64) OrderBook             order_book_;
@@ -69,7 +73,7 @@ class   TradingEngineReplay : public TradingEngine
                 else
                 {
                     channelStream.seekg(0, channelStream.end);
-                    uint64_t    size = channelStream.tellg();
+                    const uint64_t    size = channelStream.tellg();
                     channelStream.seekg(0, channelStream.beg);
                     
                     char     content[size + 1];
@@ -120,6 +124,7 @@ class   TradingEngineReplay : public TradingEngine
 
         return 0;
     }
+    
 
     private:
     std::vector<Channel>        channels;
@@ -135,17 +140,26 @@ class   TradingEngineLive : public TradingEngine
     int     run()
     {
         std::cout << "Supreme Runner Trading Engine is running !" << std::endl;
+        while (1)
+        {
+            //data processing;
+        }
 
-        //Listening to UDP Market Data
-        std::jthread    listen_mkt_data(&OrderEntryGateway::ListenMarketDataUDP, &order_entry_gateway_);
-        //Listening to TCP Order Feedback
-        std::jthread    listen_feedback_order(&OrderEntryGateway::ListenOrderFeedbackTCP, &order_entry_gateway_);
-
-        //Sending TCP Orders
-        std::jthread    send_order(&OrderEntryGateway::SendOrderTCP, &order_entry_gateway_);
+        //THOSE THREE THREADS ARE WITHIN SESSION ORDER GATEWAY MECHANISM OR OBJECT
         //TradingEngine::run();
         return 0;
     };
+
+    RxRingBuffer<OUCH::OrderEntryEvent,  trading_engine::TX_RING_SIZE>   &getCommandRing()
+    {
+        return tcp_order_entry_command_ring;
+    }
+
+    protected :
+    MatchingEngine        matching_engine_;
+   //TradingConfig        config_; If a special config is to come.
+
+    alignas(64) RxRingBuffer<OUCH::OrderEntryEvent,  trading_engine::TX_RING_SIZE>   tcp_order_entry_command_ring;
 
 };
 

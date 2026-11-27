@@ -88,7 +88,7 @@ class OrderBook
     EventsRecord                                                       events_record;
 
     alignas(64) uint64_t                                               id_incremental;
-    char                                                               stock[9] = "AAPL\0";
+    std::array<char, exchange_engine::STOCK_SYMBOL_LENGTH>             stock_symbol_;
     uint16_t                                                           stock_locate_;
 
 

@@ -244,3 +244,91 @@ H tells you things like:
 
 AAPL HALTED
 AAPL TRADING
+
+
+
+
+
+
+
+
+ITCH messages
+{
+
+COMMON 11 bytes :
+
+| Offset | Bytes | Field |
+|---:|---:|---|
+| 0 | 1 | Message Type |
+| 1 | 2 | Stock Locate |
+| 3 | 2 | Tracking Number |
+| 5 | 6 | Timestamp |
+
+
+A Add Order	Order Ref (8), Side (1), Shares (4), Stock Symbol (8), Price (4)	Add the displayed order to the local book. assets.ctfassets.net
+
+| Offset | Bytes | Field |
+|---:|---:|---|
+| 0 | 1 | Type (`'A'`) |
+| 1 | 2 | Stock Locate |
+| 3 | 2 | Tracking Number |
+| 5 | 6 | Timestamp |
+| 11 | 8 | Order Reference Number |
+| 19 | 1 | Side (`'B'` or `'S'`) |
+| 20 | 4 | Shares |
+| 24 | 8 | Stock Symbol, right-padded with spaces |
+| 32 | 4 | Price |
+
+'U' REPLACE ORDER 35 bytes :
+| Offset | Bytes | Field |
+|---:|---:|---|
+| 11 | 8 | Original Order Reference Number |
+| 19 | 8 | New Order Reference Number |
+| 27 | 4 | New total displayed shares |
+| 31 | 4 | New Price |
+
+
+'X' CANCEL ORDER 23 bytes :
+| Offset | Bytes | Field |
+|---:|---:|---|
+| 11 | 8 | Order Reference Number |
+| 19 | 4 | Cancelled Shares |
+
+'D' DELETE ORDER 19 bytes :
+| Offset | Bytes | Field |
+|---:|---:|---|
+| 11 | 8 | Order Reference Number |
+
+'E' ORDER EXECUTED 31 bytes :
+| Offset | Bytes | Field |
+|---:|---:|---|
+| 11 | 8 | Order Reference Number |
+| 19 | 4 | Executed Shares |
+| 23 | 8 | Match Number |
+
+
+'C' ORDER EXECUTED WITH PRICE 36 bytes :
+| Offset | Bytes | Field |
+|---:|---:|---|
+| 11 | 8 | Order Reference Number |
+| 19 | 4 | Executed Shares |
+| 23 | 8 | Match Number |
+| 31 | 1 | Printable (`'Y'` or `'N'`) |
+| 32 | 4 | Execution Price |
+
+
+F Add Order With MPID Attribution 40 bytes
+| Offset | Bytes | Field |
+|---:|---:|---|
+| 11 | 8 | Order Reference Number |
+| 19 | 1 | Side (`'B'` or `'S'`) |
+| 20 | 4 | Shares |
+| 24 | 8 | Stock Symbol, right-padded with spaces |
+| 32 | 4 | Price |
+| 36 | 4 | MPID Attribution |
+
+U Replace Order	Old Order Ref (8), New Order Ref (8), New Shares (4), New Price (4)	Remove the old order and insert the replacement under the new reference. Keep the original side and symbol. New Shares is the replacement’s total displayed quantity. assets.ctfassets.net
+X Cancel Order	Order Ref (8), Cancelled Shares (4)	Subtract that many shares from the displayed order. assets.ctfassets.net
+D Delete Order	Order Ref (8)	Remove the entire remaining order from the book. assets.ctfassets.net
+E Order Executed	Order Ref (8), Executed Shares (4), Match Number (8)	Subtract the executed shares. Remove the order when its displayed quantity reaches zero.
+}

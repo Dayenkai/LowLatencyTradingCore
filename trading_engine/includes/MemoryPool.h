@@ -53,7 +53,7 @@ typedef struct alignas(64) Order
     {
         
     }
-    Order(uint32_t qty, uint32_t price, Side side, uint16_t id, Order_Type type) : qty_(qty), price_(price), _side(side), _id(id), _event_type(type)
+    Order(uint32_t qty, uint32_t price, Side side, uint16_t id, Order_Type type) : qty_(qty), price_(price), _id(id), _side(side), _event_type(type), _kind(OrderQtyKind::Limit)
     {
     }
     uint32_t        qty_;

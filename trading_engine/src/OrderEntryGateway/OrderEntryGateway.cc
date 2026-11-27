@@ -67,8 +67,11 @@ int OrderEntryGateway::ListenMarketDataUDP()
             sizeof(sender_ip)
         );
 
+        std::byte *data = reinterpret_cast<std::byte*>(&buffer[0]);//We change the format for clarity purposes
+        parser.parse(std::span<std::byte>(data, received), udp_market_data_ring);
+
         std::cout
-            << "Received " << received
+            << "[UDP]Received " << received
             << " bytes from "
             << sender_ip
             << ":"
@@ -76,6 +79,7 @@ int OrderEntryGateway::ListenMarketDataUDP()
             << "\n";
 
         std::cout << "Data: " << buffer << '\n';
+        
     }
 
     close(fd);

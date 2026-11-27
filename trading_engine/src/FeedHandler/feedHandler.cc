@@ -55,10 +55,10 @@ int  FeedHandler::run(MemoryPool &pool, std::atomic<Msg> &parsed_msg)
         if (pool.rxRingDesc.data[pool.rxRingDesc.tail].len != 0)
         {
             Msg new_msg = parsed_msg.load();
-            auto start = Clock::now();
+            //auto start = Clock::now();
             parse(pool.rxRingDesc.data[pool.rxRingDesc.tail], new_msg);
             parsed_msg.store(new_msg);
-            auto end    = Clock::now();
+            //auto end    = Clock::now();
             //std::cout << "Parsing takes : " << std::chrono::duration_cast<std::chrono::nanoseconds>(end-start).count() << std::endl;
             //buildOrder(msg, marketOrder);
             //auto    start = Clock::now();
